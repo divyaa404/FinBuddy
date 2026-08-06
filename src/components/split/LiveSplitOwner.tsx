@@ -4,6 +4,9 @@ import { subscribeToSplit, subscribeToParticipants, finalizeSplitBill } from '..
 import type { Split, Participant, Transaction } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { motion } from 'framer-motion';
+import joiningSound from '../../assets/sounds/joining.mp3';
+import successSound from '../../assets/sounds/success.mp3';
 import Lottie from 'lottie-react';
 import loadingMainAnim from '../../assets/animations/loading_main.json';
 
@@ -36,6 +39,10 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
 
   const participantUrl = `${window.location.origin}${window.location.pathname}#/split/${splitId}`;
 
+  const prevCountRef = React.useRef(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [dragWidth, setDragWidth] = useState(220);
+
   // 1. Subscribe to Split metadata changes
   useEffect(() => {
     const unsub = subscribeToSplit(splitId, (data) => {
@@ -48,9 +55,22 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
   useEffect(() => {
     const unsub = subscribeToParticipants(splitId, (list) => {
       setParticipants(list);
+      
+      // Play joining sound if a new participant joined live
+      if (list.length > prevCountRef.current && prevCountRef.current !== 0) {
+        const audio = new Audio(joiningSound);
+        audio.play().catch(e => console.error("Audio playback error:", e));
+      }
+      prevCountRef.current = list.length;
     });
     return () => unsub();
   }, [splitId]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setDragWidth(containerRef.current.clientWidth - 56);
+    }
+  }, [isInitializing, participants.length]);
 
   // 3. Mathematical Bill Splitting Calculation
   const handleSplitNow = async () => {
@@ -120,6 +140,10 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
       }
 
       setHostOwed(ownerAmount);
+
+      // Play success audio
+      const audio = new Audio(successSound);
+      audio.play().catch(e => console.error("Audio playback error:", e));
 
       // Write calculations back to Firestore and finalize status
       await finalizeSplitBill(splitId, participants, calculatedAmounts);
@@ -230,25 +254,50 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
           )}
 
           {/* Action Trigger Buttons */}
-          <div className="flex gap-3 border-t border-white/5 pt-4">
-            <Button 
-              variant="secondary" 
-              onClick={onReset} 
-              className="flex-1"
-            >
-              Close Split
-            </Button>
+          <div className="flex flex-col gap-4 border-t border-white/5 pt-4">
+            {!isFinalized ? (
+              <div className="flex flex-col gap-2">
+                <label className="font-hanken text-[10px] uppercase font-bold tracking-wider text-white/50 text-center">
+                  Swipe right to split bill
+                </label>
+                <div 
+                  ref={containerRef}
+                  className="relative w-full h-14 bg-[#232629] border border-white/10 rounded-full flex items-center justify-center overflow-hidden shadow-inner"
+                >
+                  <span className="font-hanken text-[10px] uppercase font-black tracking-widest text-white/40 animate-pulse pointer-events-none select-none">
+                    {loading ? 'Splitting...' : participants.length === 0 ? 'Lobby is Empty' : 'Slide to Split >>>'}
+                  </span>
+
+                  {participants.length > 0 && !loading && (
+                    <motion.div
+                      drag="x"
+                      dragConstraints={{ left: 0, right: dragWidth }}
+                      dragElastic={0.05}
+                      dragMomentum={false}
+                      onDragEnd={(_event, info) => {
+                        if (info.offset.x >= dragWidth * 0.85) {
+                          handleSplitNow();
+                        }
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      className="absolute left-1 w-12 h-12 rounded-full bg-neon-green text-[#121212] flex items-center justify-center cursor-grab active:cursor-grabbing shadow-[0_0_15px_rgba(15,238,101,0.5)] z-20 transition-transform"
+                    >
+                      <span className="material-symbols-outlined font-bold pointer-events-none">arrow_forward</span>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            ) : null}
             
-            {!isFinalized && (
-              <Button
-                variant="primary"
-                onClick={handleSplitNow}
-                disabled={participants.length === 0 || loading}
-                className="flex-1"
+            <div className="flex gap-3 mt-1">
+              <Button 
+                variant="secondary" 
+                onClick={onReset} 
+                className="flex-1 text-xs"
               >
-                {loading ? 'Splitting...' : `Split Bill (among ${participants.length + 1})`}
+                Close View
               </Button>
-            )}
+            </div>
           </div>
         </Card>
       </div>

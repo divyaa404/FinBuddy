@@ -15,7 +15,7 @@ export const Card: React.FC<CardProps> = ({
   const baseStyle = 'rounded-xl overflow-hidden transition-all duration-300 relative';
   
   const variants = {
-    vessel: 'bg-[#121212] text-white border border-white/[0.08] p-6',
+    vessel: 'bg-[#1e2022] text-white border border-white/10 p-6',
     light: 'bg-white text-on-surface border border-outline-variant/30 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.03)] p-6'
   };
 

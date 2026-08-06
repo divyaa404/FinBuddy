@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { Transaction, Budget, SavingsGoal } from './types';
+import { motion } from 'framer-motion';
+import Lottie from 'lottie-react';
+import loadingMainAnim from './assets/animations/loading_main.json';
+
+const LottiePlayer = (Lottie as any).default || Lottie;
 import { AuthGate } from './components/auth/AuthGate';
 import { Navbar } from './components/ui/Navbar';
 import { Dock } from './components/ui/Dock';
@@ -74,6 +79,16 @@ function App() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [isTabLoading, setIsTabLoading] = useState(false);
+
+  const handleTabChange = (tab: string) => {
+    if (tab === activeTab) return;
+    setIsTabLoading(true);
+    setTimeout(() => {
+      setActiveTab(tab);
+      setIsTabLoading(false);
+    }, 600);
+  };
 
   // Hash-based client router for participant view (#/split/:id)
   useEffect(() => {
@@ -163,7 +178,7 @@ function App() {
           <Sidebar 
             user={user} 
             activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
+            setActiveTab={handleTabChange} 
             isExpanded={isExpanded} 
             setIsExpanded={setIsExpanded} 
             onPayTrigger={() => setShowPayModal(true)} 
@@ -177,21 +192,38 @@ function App() {
           {/* Main Application Canvas */}
           <main className={`flex-1 max-w-lg md:max-w-none w-full px-6 pt-24 pb-32 md:pt-12 md:pb-12 md:pr-12 md:mx-0 transition-all duration-300 ${isExpanded ? 'md:pl-80' : 'md:pl-36'}`}>
             
-            {/* 1. HOMEPAGE TAB */}
-            {activeTab === 'home' && (
-              <div className="flex flex-col gap-6 w-full">
-                
-                {/* Financial Health radial meter */}
-                <FinancialHealthHero transactions={transactions} budgets={budgets} />
+            {isTabLoading ? (
+              <div className="min-h-[500px] flex flex-col items-center justify-center w-full">
+                <div className="w-40 h-40">
+                  <LottiePlayer animationData={loadingMainAnim} loop={true} />
+                </div>
+                <p className="font-hanken text-[10px] uppercase font-bold tracking-widest text-[#121212]/40 animate-pulse mt-2">
+                  Syncing FinBuddy logs...
+                </p>
+              </div>
+            ) : (
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="flex flex-col gap-6 w-full"
+              >
+                {/* 1. HOMEPAGE TAB */}
+                {activeTab === 'home' && (
+                  <div className="flex flex-col gap-6 w-full">
+                    
+                    {/* Financial Health radial meter */}
+                    <FinancialHealthHero transactions={transactions} budgets={budgets} />
 
-                {/* Safe-To-Spend metric & Quick totals cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                  <DailySafeToSpend transactions={transactions} budgets={budgets} />
-                  <div className="bg-[#121212] p-5 rounded-2xl border border-white/[0.08] flex flex-col justify-center items-center text-center text-white relative overflow-hidden h-full">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-neon-green/5 rounded-full blur-[40px] pointer-events-none"></div>
-                    <span className="material-symbols-outlined text-neon-green text-3xl mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>add_card</span>
-                    <h4 className="font-hanken text-[10px] uppercase font-bold tracking-wider text-white/50">Ledger Entry</h4>
-                    <p className="text-xs text-white/70 max-w-[220px] mt-1 mb-4">Instantly record daily expense logs with note keywords auto-categories.</p>
+                    {/* Safe-To-Spend metric & Quick totals cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                      <DailySafeToSpend transactions={transactions} budgets={budgets} />
+                      <div className="bg-[#1e2022] p-5 rounded-2xl border border-white/10 flex flex-col justify-center items-center text-center text-white relative overflow-hidden h-full">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-neon-green/5 rounded-full blur-[40px] pointer-events-none"></div>
+                        <span className="material-symbols-outlined text-neon-green text-3xl mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>add_card</span>
+                        <h4 className="font-hanken text-[10px] uppercase font-bold tracking-wider text-white/50">Ledger Entry</h4>
+                        <p className="text-xs text-white/70 max-w-[220px] mt-1 mb-4">Instantly record daily expense logs with note keywords auto-categories.</p>
                     <Button 
                       onClick={() => setShowAddModal(true)} 
                       variant="primary" 
@@ -205,8 +237,8 @@ function App() {
 
                 {/* Split Bill Promotional Bridge Card */}
                 <div 
-                  className="bg-[#121212] text-white rounded-[24px] p-6 relative overflow-hidden flex justify-between items-center border border-white/5 shadow-xl min-h-[148px] cursor-pointer group active:scale-98 transition-all duration-300"
-                  onClick={() => setActiveTab('split')}
+                  className="bg-[#1e2022] text-white rounded-[24px] p-6 relative overflow-hidden flex justify-between items-center border border-white/10 shadow-xl min-h-[148px] cursor-pointer group active:scale-98 transition-all duration-300"
+                  onClick={() => handleTabChange('split')}
                 >
                   <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-neon-green via-transparent to-transparent pointer-events-none"></div>
                   <div className="flex flex-col gap-4 relative z-10 max-w-[60%]">
@@ -335,12 +367,15 @@ function App() {
               </Card>
             )}
 
+              </motion.div>
+            )}
+
           </main>
 
           {/* Add / Edit Transaction Modal */}
           {showAddModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
-              <Card variant="vessel" className="w-full max-w-sm p-6 border border-white/10 rounded-2xl shadow-2xl relative">
+              <Card variant="vessel" className="w-full max-w-sm p-6 border border-white/10 rounded-2xl shadow-2xl relative bg-[#1e2022]">
                 <TransactionForm
                   onAddTransaction={handleAddTransaction}
                   onClose={() => {
@@ -364,7 +399,7 @@ function App() {
           {/* Sticky Bottom Dock */}
           <Dock 
             activeTab={activeTab === 'budget' ? 'goals' : activeTab} 
-            setActiveTab={setActiveTab} 
+            setActiveTab={handleTabChange} 
             onPayTrigger={() => setShowPayModal(true)} 
           />
 

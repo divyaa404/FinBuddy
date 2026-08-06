@@ -91,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       initial={false}
       animate={isExpanded ? "expanded" : "collapsed"}
       variants={sidebarVariants}
-      className="hidden md:flex flex-col items-center py-8 gap-6 fixed left-6 top-6 bottom-6 bg-[#121212]/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[2.5rem] z-40 overflow-visible"
+      className="hidden md:flex flex-col items-center py-8 gap-6 fixed left-6 top-6 bottom-6 bg-[#1e2022]/85 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[2.5rem] z-40 overflow-visible"
     >
       {/* Subtle glass overlay */}
       <div className="absolute inset-0 bg-white/[0.02] pointer-events-none rounded-[2.5rem]" />
@@ -161,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               
               {/* Tooltip on collapsed state */}
               {!isExpanded && (
-                <span className="absolute left-full ml-4 top-1/2 -translate-y-1/2 bg-[#121212]/70 backdrop-blur-md border border-white/20 text-white text-[11px] px-4 py-2.5 rounded-xl pointer-events-none uppercase tracking-wider font-extrabold whitespace-nowrap origin-left scale-x-0 opacity-0 transition-all duration-300 ease-out group-hover:scale-x-100 group-hover:opacity-100 shadow-2xl z-50 shadow-neon-green/5">
+                <span className="absolute left-full ml-4 top-1/2 -translate-y-1/2 bg-[#1e2022]/80 backdrop-blur-md border border-white/20 text-white text-[11px] px-4 py-2.5 rounded-xl pointer-events-none uppercase tracking-wider font-extrabold whitespace-nowrap origin-left scale-x-0 opacity-0 transition-all duration-300 ease-out group-hover:scale-x-100 group-hover:opacity-100 shadow-2xl z-50 shadow-neon-green/5">
                   {item.label}
                 </span>
               )}

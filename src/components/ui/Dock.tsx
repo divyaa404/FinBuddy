@@ -16,7 +16,7 @@ export const Dock: React.FC<DockProps> = ({ activeTab, setActiveTab, onPayTrigge
   };
 
   return (
-    <nav className="fixed bottom-6 inset-x-4 z-50 max-w-md mx-auto bg-[#121212]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.4)] md:hidden">
+    <nav className="fixed bottom-6 inset-x-4 z-50 max-w-md mx-auto bg-[#1e2022]/85 backdrop-blur-xl border border-white/10 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.4)] md:hidden">
       <div className="flex justify-between items-center h-16 px-6 relative">
         
         {/* Home Tab */}
