@@ -142,9 +142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
           {/* Logo on Left */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-neon-green font-hanken font-black text-lg">
-              F
-            </div>
+            <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
             <span className="font-hanken font-extrabold text-lg text-black uppercase tracking-tight">
               Fin<span className="text-[#00aa3b]">Buddy</span>
             </span>
@@ -1556,7 +1554,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
           {/* Logo Column */}
           <div className="md:col-span-4 flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-hanken font-black text-lg">F</div>
+              <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
               <span className="font-hanken font-extrabold text-lg text-white uppercase tracking-tight">FinBuddy</span>
             </div>
             <p className="text-xs text-white/40 leading-relaxed font-sans max-w-sm">

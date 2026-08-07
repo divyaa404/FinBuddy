@@ -41,9 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab })
           className="flex items-center gap-2 cursor-pointer select-none"
           onClick={() => setActiveTab('home')}
         >
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-neon-green font-bold text-lg shadow-sm">
-            F
-          </div>
+          <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
           <span className="font-hanken font-extrabold text-lg text-primary tracking-tight">
             Fin<span className="text-neon-green text-shadow-glow">Buddy</span>
           </span>

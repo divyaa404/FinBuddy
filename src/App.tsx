@@ -12,15 +12,11 @@ import { Navbar } from './components/ui/Navbar';
 import { Dock } from './components/ui/Dock';
 import { Sidebar } from './components/ui/Sidebar';
 import { Card } from './components/ui/Card';
-import { Button } from './components/ui/Button';
 import { GPayModal } from './components/dashboard/GPayModal';
-import splitCardImg from './assets/images/split_card.png';
 
 // Dashboard Components
-import { FinancialHealthHero } from './components/dashboard/FinancialHealthHero';
-import { QuickStats } from './components/dashboard/QuickStats';
-import { DailySafeToSpend } from './components/dashboard/DailySafeToSpend';
 import { SpendingCharts } from './components/dashboard/SpendingCharts';
+import { StudentFinanceHome } from './components/dashboard/StudentFinanceHome';
 
 // Split Components
 import { CreateSplit } from './components/split/CreateSplit';
@@ -33,7 +29,6 @@ import { GoalTracker } from './components/savings/GoalTracker';
 
 // Transaction Components
 import { TransactionForm } from './components/transactions/TransactionForm';
-import { TransactionList } from './components/transactions/TransactionList';
 
 // Seed Data
 const INITIAL_TRANSACTIONS: Transaction[] = [
@@ -73,6 +68,7 @@ function App() {
   const [budgets, setBudgets] = useLocalStorage<Budget[]>('budgets', INITIAL_BUDGETS);
   const [goals, setGoals] = useLocalStorage<SavingsGoal[]>('goals', INITIAL_GOALS);
   const [activeSplitId, setActiveSplitId] = useLocalStorage<string | null>('active_split_id', null);
+  const [balance, setBalance] = useLocalStorage<number>('account_balance', 25000);
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -114,14 +110,44 @@ function App() {
       id: `t_${Date.now()}`
     };
     setTransactions(prev => [transaction, ...prev]);
+    
+    // Sync balance
+    if (newTx.type === 'expense') {
+      setBalance(prev => Math.max(0, prev - newTx.amount));
+    } else if (newTx.type === 'income') {
+      setBalance(prev => prev + newTx.amount);
+    }
   };
 
   const handleUpdateTransaction = (updatedTx: Transaction) => {
+    const oldTx = transactions.find(tx => tx.id === updatedTx.id);
+    if (oldTx) {
+      setBalance(prev => {
+        let val = prev;
+        // reverse old transaction
+        if (oldTx.type === 'expense') val += oldTx.amount;
+        else if (oldTx.type === 'income') val = Math.max(0, val - oldTx.amount);
+        
+        // apply new transaction
+        if (updatedTx.type === 'expense') val = Math.max(0, val - updatedTx.amount);
+        else if (updatedTx.type === 'income') val += updatedTx.amount;
+        
+        return val;
+      });
+    }
     setTransactions(prev => prev.map(tx => tx.id === updatedTx.id ? updatedTx : tx));
     setEditingTransaction(null);
   };
 
   const handleDeleteTransaction = (id: string) => {
+    const oldTx = transactions.find(tx => tx.id === id);
+    if (oldTx) {
+      setBalance(prev => {
+        if (oldTx.type === 'expense') return prev + oldTx.amount;
+        if (oldTx.type === 'income') return Math.max(0, prev - oldTx.amount);
+        return prev;
+      });
+    }
     setTransactions(prev => prev.filter(tx => tx.id !== id));
   };
 
@@ -211,73 +237,21 @@ function App() {
               >
                 {/* 1. HOMEPAGE TAB */}
                 {activeTab === 'home' && (
-                  <div className="flex flex-col gap-6 w-full">
-                    
-                    {/* Financial Health radial meter */}
-                    <FinancialHealthHero transactions={transactions} budgets={budgets} />
-
-                    {/* Safe-To-Spend metric & Quick totals cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                      <DailySafeToSpend transactions={transactions} budgets={budgets} />
-                      <div className="bg-[#1e2022] p-5 rounded-2xl border border-white/10 flex flex-col justify-center items-center text-center text-white relative overflow-hidden h-full">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-neon-green/5 rounded-full blur-[40px] pointer-events-none"></div>
-                        <span className="material-symbols-outlined text-neon-green text-3xl mb-2" style={{ fontVariationSettings: "'FILL' 1" }}>add_card</span>
-                        <h4 className="font-hanken text-[10px] uppercase font-bold tracking-wider text-white/50">Ledger Entry</h4>
-                        <p className="text-xs text-white/70 max-w-[220px] mt-1 mb-4">Instantly record daily expense logs with note keywords auto-categories.</p>
-                    <Button 
-                      onClick={() => setShowAddModal(true)} 
-                      variant="primary" 
-                      className="gap-1.5 px-6 font-bold"
-                    >
-                      <span className="material-symbols-outlined text-sm font-bold">add</span>
-                      Log Expense
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Split Bill Promotional Bridge Card */}
-                <div 
-                  className="bg-[#1e2022] text-white rounded-[24px] p-6 relative overflow-hidden flex justify-between items-center border border-white/10 shadow-xl min-h-[148px] cursor-pointer group active:scale-98 transition-all duration-300"
-                  onClick={() => handleTabChange('split')}
-                >
-                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-neon-green via-transparent to-transparent pointer-events-none"></div>
-                  <div className="flex flex-col gap-4 relative z-10 max-w-[60%]">
-                    <div className="flex flex-col gap-1 text-left">
-                      <span className="text-[9px] uppercase tracking-wider text-neon-green font-extrabold px-2 py-0.5 rounded bg-neon-green/10 border border-neon-green/20 self-start">
-                        Quick Split
-                      </span>
-                      <h3 className="font-hanken font-bold text-lg text-white mt-1.5">Split bills. Settle faster.</h3>
-                      <p className="text-xs text-white/50 leading-relaxed font-sans">Set up live roomie split sessions with QR scanning.</p>
-                    </div>
-                    <button className="bg-neon-green text-[#121212] px-4 py-2 rounded-full font-hanken font-bold text-[11px] self-start flex items-center gap-1.5 group-hover:scale-105 active:scale-95 transition-all shadow-[0_4px_12px_rgba(15,238,101,0.25)] cursor-pointer">
-                      Split a bill
-                      <span className="material-symbols-outlined text-[14px] font-bold">arrow_forward</span>
-                    </button>
-                  </div>
-                  <div className="absolute top-1/2 -translate-y-1/2 right-2 md:right-8 w-32 h-32 md:w-40 md:h-40 overflow-hidden pointer-events-none flex items-center justify-center">
-                    <img 
-                      src={splitCardImg} 
-                      alt="Split Card" 
-                      className="w-full h-auto object-contain transform rotate-6 drop-shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12" 
-                    />
-                  </div>
-                </div>
-
-                {/* Horizontal scroll cards: income, expense, savings */}
-                <QuickStats transactions={transactions} />
-
-                {/* Recent Transaction Logs */}
-                <TransactionList 
-                  transactions={transactions} 
-                  onDeleteTransaction={handleDeleteTransaction}
-                  onEditTransaction={(tx) => {
-                    setEditingTransaction(tx);
-                    setShowAddModal(true);
-                  }}
-                />
-
-              </div>
-            )}
+                  <StudentFinanceHome
+                    user={user}
+                    transactions={transactions}
+                    budgets={budgets}
+                    balance={balance}
+                    setBalance={setBalance}
+                    onAddTransaction={handleAddTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}
+                    onEditTransaction={(tx) => {
+                      setEditingTransaction(tx);
+                      setShowAddModal(true);
+                    }}
+                    onTabChange={handleTabChange}
+                  />
+                )}
 
             {/* 2. INSIGHTS TAB */}
             {activeTab === 'insights' && (

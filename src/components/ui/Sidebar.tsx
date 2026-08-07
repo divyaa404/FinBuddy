@@ -101,13 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
         className="relative z-10 w-12 h-12 bg-black/40 hover:bg-black/60 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner hover:scale-105 active:scale-95 transition-transform cursor-pointer"
       >
-        <motion.div
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15 }}
-          className="text-neon-green font-black font-hanken text-lg"
-        >
-          F
-        </motion.div>
+        <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
       </button>
 
       {/* Navigation Items */}
