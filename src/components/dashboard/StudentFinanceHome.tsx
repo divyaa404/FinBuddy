@@ -7,7 +7,7 @@ import { AnimatedBalance } from './AnimatedBalance';
 import Lottie from 'lottie-react';
 import trophyAnim from '../../assets/animations/Trophy.json';
 import splitCardImg from '../../assets/images/split_card.png';
-import { motion } from 'framer-motion';
+
 
 const LottiePlayer = (Lottie as any).default || Lottie;
 
@@ -42,8 +42,7 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
   // Mobile modal state for simple views
   const [showMobileStreaksModal, setShowMobileStreaksModal] = useState(false);
 
-  // Hover state for interactive cards
-  const [isHovered, setIsHovered] = useState(false);
+
 
   // Intersection observer for Leaderboard scroll detection (replays Lottie by incrementing key)
   const [playCount, setPlayCount] = useState(0);
@@ -536,86 +535,38 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
 
         {/* Col 2: Split Promotional Stack */}
         <div className="hidden lg:flex lg:col-span-4 flex-col gap-4">
-  {/* Card 2.1: Split Promotional Card */}
-  <div 
-    className="bg-[#1e2022] text-white rounded-[24px] p-4.5 relative overflow-hidden flex flex-col justify-between border border-white/10 shadow-xl min-h-[155px] cursor-pointer group active:scale-[0.98] transition-all duration-300"
-    onClick={() => onTabChange('split')}
-    onMouseEnter={() => setIsHovered(true)}
-    onMouseLeave={() => setIsHovered(false)}
-  >
-    <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-neon-green via-transparent to-transparent pointer-events-none"></div>
-    
-    <div className="flex justify-between items-start relative z-10 w-full">
-      <div className="flex flex-col gap-1 text-left max-w-[65%]">
-        <span className="text-[9px] uppercase tracking-wider text-neon-green font-extrabold px-2 py-0.5 rounded bg-neon-green/10 border border-neon-green/20 self-start">
-          Quick Split
-        </span>
-        <h3 className="font-hanken font-bold text-xs text-white mt-1.5 leading-tight">Split bills. Settle faster.</h3>
-        <p className="text-[9px] text-white/50 leading-relaxed font-sans mt-1">Set up live roomie split sessions with QR scanning.</p>
-      </div>
-      
-      {/* Rotated split card image on right */}
-      <div className="absolute -right-2 top-0 w-30 h-16 overflow-hidden pointer-events-none flex items-center justify-center">
-        <img 
-          src={splitCardImg} 
-          alt="Split Card" 
-          className="w-full h-auto object-contain transform rotate-6 drop-shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12" 
-        />
-      </div>
-    </div>
-
-    {/* Animated Sliding Button Effect */}
-    <div className="relative z-10 w-full h-[36px] bg-neon-green rounded-xl overflow-hidden mt-2 shadow-[0_4px_12px_rgba(15,238,101,0.25)] border-none">
-      {/* Sliding Background */}
-      <motion.div
-        initial={{ x: "-100%" }}
-        animate={{ x: isHovered ? "0%" : "-100%" }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute inset-0 bg-white z-0 rounded-xl"
-      />
-
-      {/* Button Content Wrapper */}
-      <div className="relative z-10 flex items-center justify-center w-full h-full overflow-hidden">
-        {/* Default State */}
-        <motion.div
-          initial={false}
-          animate={{
-            y: isHovered ? 28 : 0,
-            opacity: isHovered ? 0 : 1,
-          }}
-          transition={{ duration: 0.3 }}
-          className="absolute flex items-center justify-center gap-1.5 font-hanken font-bold text-[10px] text-[#121212]"
-        >
-          <span>Split a bill</span>
-          <span className="material-symbols-outlined text-[12px] font-bold">arrow_forward</span>
-        </motion.div>
-
-        {/* Hover State */}
-        <motion.div
-          initial={false}
-          animate={{
-            y: isHovered ? 0 : -28,
-            opacity: isHovered ? 1 : 0,
-          }}
-          transition={{ duration: 0.3 }}
-          className="absolute flex items-center justify-center gap-1.5 font-hanken font-bold text-[10px] text-black"
-        >
-          <motion.span
-            initial={{ x: -8, opacity: 0 }}
-            animate={{
-              x: isHovered ? 0 : -8,
-              opacity: isHovered ? 1 : 0,
-            }}
-            transition={{ duration: 0.3, delay: 0.05 }}
-            className="flex items-center"
+          {/* Card 2.1: Split Promotional Card */}
+          <div 
+            className="bg-[#1e2022] text-white rounded-[24px] p-4.5 relative overflow-hidden flex flex-col justify-between border border-white/10 shadow-xl min-h-[155px] cursor-pointer group active:scale-[0.98] transition-all duration-300"
+            onClick={() => onTabChange('split')}
           >
-            <span className="material-symbols-outlined text-[12px] font-bold">arrow_forward</span>
-          </motion.span>
-          <span>Settle Now</span>
-        </motion.div>
-      </div>
-    </div>
-  </div>
+            <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-neon-green via-transparent to-transparent pointer-events-none"></div>
+            
+            <div className="flex justify-between items-start relative z-10 w-full">
+              <div className="flex flex-col gap-1 text-left max-w-[65%]">
+                <span className="text-[9px] uppercase tracking-wider text-neon-green font-extrabold px-2 py-0.5 rounded bg-neon-green/10 border border-neon-green/20 self-start">
+                  Quick Split
+                </span>
+                <h3 className="font-hanken font-bold text-xs text-white mt-1.5 leading-tight">Split bills. Settle faster.</h3>
+                <p className="text-[9px] text-white/50 leading-relaxed font-sans mt-1">Set up live roomie split sessions with QR scanning.</p>
+              </div>
+              
+              {/* Rotated split card image on right */}
+              <div className="absolute -right-2 top-0 w-20 h-20 overflow-hidden pointer-events-none flex items-center justify-center">
+                <img 
+                  src={splitCardImg} 
+                  alt="Split Card" 
+                  className="w-full h-auto object-contain transform rotate-6 drop-shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12" 
+                />
+              </div>
+            </div>
+
+            {/* Clean, Non-Glitchy Interactive Button */}
+            <button className="relative z-10 w-full bg-neon-green hover:bg-white text-[#121212] py-2 rounded-xl font-hanken font-bold text-[10px] mt-2 flex items-center justify-center gap-1.5 transition-all duration-300 shadow-[0_4px_10px_rgba(15,238,101,0.2)] hover:shadow-[0_4px_15px_rgba(255,255,255,0.4)] cursor-pointer border-none group">
+              <span>Split a bill</span>
+              <span className="material-symbols-outlined text-[12px] font-bold transform group-hover:translate-x-1 transition-transform duration-200">arrow_forward</span>
+            </button>
+          </div>
 
   {/* Card 2.2: Roomie Dues Card */}
   <Card variant="light" className="bg-[#ffffff] text-[#121212] p-4.5 rounded-[24px] border border-outline-variant/30 flex flex-col justify-between text-left shadow-md flex-1">
