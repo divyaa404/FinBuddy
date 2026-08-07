@@ -1,11 +1,33 @@
+<div align="center">
+
 # 💰 Student Finance Dashboard
 
 ### *Track. Save. Split.*
 
-Student Finance Dashboard is a modern web application designed specifically for students to manage their personal finances with ease. It combines expense tracking, budgeting, savings goals, financial analytics, and a real-time **Split & Settle** system into one intuitive platform that encourages smarter financial habits.
+A modern finance management platform built specifically for students to track expenses, manage budgets, achieve savings goals, analyze spending, and split group expenses in real time.
+
+<br/>
+
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=FFD62E)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+
+![Firestore](https://img.shields.io/badge/Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+![React Hooks](https://img.shields.io/badge/React_Hooks-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Local Storage](https://img.shields.io/badge/Local_Storage-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)
+![QR Code](https://img.shields.io/badge/QR_Code-qrcode.react-000000?style=for-the-badge)
+![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)
+
+![Lucide React](https://img.shields.io/badge/Lucide_React-000000?style=for-the-badge)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Responsive](https://img.shields.io/badge/Responsive-Mobile%20%7C%20Tablet%20%7C%20Desktop-00C853?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Hackathon-blue?style=for-the-badge)
+
+</div>
 
 ---
-
 # 📄 Project Overview
 
 Student Finance Dashboard helps students understand where their money goes by providing an easy-to-use finance management platform.
