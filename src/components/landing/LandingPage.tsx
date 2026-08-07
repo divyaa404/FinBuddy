@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HeroSection } from './HeroSection';
+import Lenis from 'lenis';
+import heroMobileImg from '../../assets/images/hero_mobile.png';
 
 interface LandingPageProps {
   onAuthTrigger: (mode: 'signin' | 'signup' | 'demo') => void;
@@ -24,6 +25,18 @@ const animItemVariants = {
     y: 0,
     transition: {
       duration: 0.55,
+      ease: [0.16, 1, 0.3, 1] as const
+    }
+  }
+};
+
+const sectionRevealVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.7,
       ease: [0.16, 1, 0.3, 1] as const
     }
   }
@@ -78,7 +91,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -86,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
@@ -336,12 +350,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
         </motion.div>
 
         {/* Right Side Floating Mobile Graphic */}
-        <div className="lg:col-span-6 relative flex justify-center items-center h-[540px] w-full">
+        <motion.div
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="lg:col-span-6 relative flex justify-center items-center h-[540px] w-full"
+        >
           {/* Large Hero Mobile Dashboard Graphic */}
           <img 
-            src={heroMobileImg} 
-            alt="FinBuddy Mobile Dashboard Mockup" 
-            className="relative z-10 w-auto h-880px] max-h-[580px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.5)] transform rotate-2 hover:rotate-0 transition-all duration-500 hover:scale-[1.03]" 
+            src={heroMobileImg}
+            alt="FinBuddy Mobile Dashboard Mockup"
+            className="relative z-10 w-auto h-[560px] md:h-[660px] max-h-[580px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.5)] transform rotate-2 hover:rotate-0 transition-all duration-500 hover:scale-[1.03]"
           />
 
           {/* Floating Cards (Around the mobile graphic to preserve high-fidelity visual context) */}
@@ -534,7 +553,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12 relative z-10">
+          <motion.div
+            variants={sectionRevealVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12 relative z-10"
+          >
             {/* Feature 1 */}
             <div className="flex flex-col text-left gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-neon-green border border-white/10 shadow-lg">
@@ -666,8 +691,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
                 Download structured summaries of incomes, expenses, splits, and savings margins.
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
+      </section>
+
+      <section className="px-6 md:px-12 py-6 max-w-7xl mx-auto">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.25 }}
+          variants={sectionRevealVariants}
+          className="overflow-hidden rounded-[36px] border border-black/10 bg-gradient-to-br from-[#0b0b0c] via-[#121212] to-[#151515] p-8 md:p-12 shadow-[0_24px_70px_rgba(0,0,0,0.08)]"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
+            <div className="text-left">
+              <span className="inline-flex items-center rounded-full border border-neon-green/25 bg-neon-green/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-neon-green">
+                Split Smarter
+              </span>
+              <h3 className="mt-4 font-hanken text-3xl md:text-4xl font-black tracking-tight text-white">
+                Share the bill, keep the vibe.
+              </h3>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/65 font-sans">
+                Create a live room, invite your roommates, and split dinner, rent, or groceries without the usual back-and-forth.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button onClick={() => onAuthTrigger('signup')} className="rounded-full bg-neon-green px-5 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-black transition-all hover:scale-[1.01]">
+                  Start a Split
+                </button>
+                <a href="#showcase" className="rounded-full border border-white/15 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/75 transition-colors hover:text-white">
+                  View Demo
+                </a>
+              </div>
+            </div>
+            <div className="rounded-[28px] border border-white/10 bg-[#141415]/95 p-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div>
+                  <p className="text-[9px] uppercase tracking-[0.3em] text-white/40">Live Split Room</p>
+                  <h4 className="mt-1 font-hanken text-lg font-bold text-white">Roomies Dinner</h4>
+                </div>
+                <span className="rounded-full bg-neon-green/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-neon-green">Live</span>
+              </div>
+              <div className="mt-4 space-y-3 text-sm text-white/70">
+                <div className="flex items-center justify-between rounded-2xl bg-white/5 px-3 py-3">
+                  <span>Pizza & mocktails</span>
+                  <span className="font-semibold text-white">₹1,240</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl bg-white/5 px-3 py-3">
+                  <span>Shared rides</span>
+                  <span className="font-semibold text-white">₹360</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-neon-green/20 bg-neon-green/10 px-3 py-3">
+                  <span className="text-neon-green">Your share</span>
+                  <span className="font-semibold text-neon-green">₹530</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* ──────────────────────────────
