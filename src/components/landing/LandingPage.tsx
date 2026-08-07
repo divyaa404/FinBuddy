@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import heroMobileImg from '../../assets/images/hero_mobile.png';
 
 interface LandingPageProps {
   onAuthTrigger: (mode: 'signin' | 'signup' | 'demo') => void;
@@ -235,88 +236,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
           </div>
         </div>
 
-        {/* Right Side Floating Premium Dashboard */}
-        <div className="lg:col-span-6 relative flex justify-center items-center h-[520px]">
-          
-          {/* Subtle Background Grid Accent */}
-          <div className="absolute inset-0 bg-grid-pattern-dark bg-black rounded-[40px] opacity-5 pointer-events-none"></div>
+        {/* Right Side Floating Mobile Graphic */}
+        <div className="lg:col-span-6 relative flex justify-center items-center h-[540px] w-full">
+          {/* Large Hero Mobile Dashboard Graphic */}
+          <img 
+            src={heroMobileImg} 
+            alt="FinBuddy Mobile Dashboard Mockup" 
+            className="relative z-10 w-auto h-880px] max-h-[580px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.5)] transform rotate-2 hover:rotate-0 transition-all duration-500 hover:scale-[1.03]" 
+          />
 
-          {/* Floating vessel mockup */}
-          <div className="w-full max-w-[440px] bg-[#0B0B0C] border border-white/[0.08] text-white p-6 rounded-[32px] shadow-2xl relative transition-transform duration-500 hover:scale-[1.02] z-10">
-            
-            {/* Dashboard Header */}
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <span className="text-white/40 text-[9px] font-bold uppercase tracking-wider font-hanken">Student Account</span>
-                <h3 className="font-hanken font-bold text-lg mt-0.5">Hey, Rahul 👋</h3>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-white/40 text-[9px] font-bold uppercase tracking-wider font-hanken">Health Rating</span>
-                <span className="text-neon-green font-hanken font-black text-sm uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
-                  84/100
-                </span>
-              </div>
-            </div>
-
-            {/* Income, Expense, Savings Cards */}
-            <div className="grid grid-cols-3 gap-2.5 mb-6">
-              <div className="bg-[#181819] p-3 rounded-2xl border border-white/5 text-left">
-                <span className="text-white/45 text-[8px] uppercase font-bold font-hanken tracking-wider">Income</span>
-                <p className="font-sans font-bold text-xs text-white mt-0.5">₹20,000</p>
-              </div>
-              <div className="bg-[#181819] p-3 rounded-2xl border border-white/5 text-left">
-                <span className="text-white/45 text-[8px] uppercase font-bold font-hanken tracking-wider">Expenses</span>
-                <p className="font-sans font-bold text-xs text-neon-green mt-0.5">₹7,250</p>
-              </div>
-              <div className="bg-[#181819] p-3 rounded-2xl border border-white/5 text-left">
-                <span className="text-white/45 text-[8px] uppercase font-bold font-hanken tracking-wider">Savings</span>
-                <p className="font-sans font-bold text-xs text-white/90 mt-0.5">₹12,750</p>
-              </div>
-            </div>
-
-            {/* Simulated Live Spending Chart */}
-            <div className="bg-[#141415] rounded-2xl border border-white/5 p-4 mb-5 text-left">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-white/50 text-[9px] uppercase font-bold font-hanken tracking-wider">Weekly Spending Flow</span>
-                <span className="text-white/30 text-[9px] uppercase font-bold tracking-wider">Mon - Sun</span>
-              </div>
-              <div className="h-28 flex items-end justify-between gap-1 mt-1">
-                {[40, 25, 60, 15, 80, 45, 30].map((val, idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1.5">
-                    <div className="w-full bg-[#1e1e1f] rounded-md h-20 relative overflow-hidden flex items-end">
-                      <div 
-                        className="w-full bg-neon-green rounded-md transition-all duration-1000 ease-out" 
-                        style={{ height: `${val}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-white/30 text-[8px] font-semibold">{['M','T','W','T','F','S','S'][idx]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Budget Progress & Goal */}
-            <div className="flex flex-col gap-3 text-left">
-              <div className="bg-[#161617] p-3 rounded-2xl border border-white/5 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-[#00aa3b] bg-neon-green/10 p-1.5 rounded-lg">wallet</span>
-                  <div>
-                    <h5 className="text-[10px] font-bold text-white">Monthly Budget</h5>
-                    <p className="text-[8px] text-white/40">Food & Entertainment</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-neon-green">82% Used</span>
-                  <div className="w-16 h-1 bg-[#252526] rounded-full overflow-hidden mt-1">
-                    <div className="h-full bg-neon-green" style={{ width: '82%' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Floating Cards (Around the dashboard) */}
+          {/* Floating Cards (Around the mobile graphic to preserve high-fidelity visual context) */}
           <div className="absolute top-12 -left-8 bg-[#0B0B0C] border border-white/10 text-white py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 z-20 animate-float-slow">
             <span className="material-symbols-outlined text-sm text-neon-green">savings</span>
             <div className="text-left">
@@ -325,11 +254,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
             </div>
           </div>
 
-          <div className="absolute top-1/2 -right-10 bg-[#0B0B0C] border border-white/10 text-white py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 z-20 animate-float-medium">
+          <div className="absolute top-1/2 -right-8 bg-[#0B0B0C] border border-white/10 text-white py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 z-20 animate-float-medium">
             <span className="material-symbols-outlined text-sm text-neon-green">laptop_mac</span>
             <div className="text-left">
               <p className="text-[8px] text-white/40 font-bold uppercase tracking-wider">College Goal</p>
-              <h4 className="text-xs font-bold text-white leading-tight">Laptop Goal 65%</h4>
+              <h4 className="text-xs font-bold text-white leading-tight">Laptop 65%</h4>
             </div>
           </div>
 
@@ -338,7 +267,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
             <div className="text-left">
               <p className="text-[8px] text-neon-green font-bold uppercase tracking-wider">AI Insight</p>
               <p className="text-[10px] text-white/80 leading-normal font-sans mt-0.5">
-                "You spent 18% less on eating out this week compared to your average."
+                "Skipping Friday delivery puts you 12% closer to yourElectric Scooter goal."
               </p>
             </div>
           </div>
