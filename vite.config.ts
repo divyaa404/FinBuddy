@@ -10,5 +10,17 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    proxy: {
+      '/grok-api': {
+        target: 'https://api.x.ai/v1',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/grok-api/, ''),
+        headers: {
+          'Origin': 'https://api.x.ai'
+        }
+      }
+    }
+  }
 })
 

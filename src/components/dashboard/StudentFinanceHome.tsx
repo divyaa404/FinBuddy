@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import type { Transaction, Budget } from '../../types';
 import { Card } from '../ui/Card';
@@ -7,9 +7,200 @@ import { AnimatedBalance } from './AnimatedBalance';
 import Lottie from 'lottie-react';
 import trophyAnim from '../../assets/animations/Trophy.json';
 import splitCardImg from '../../assets/images/split_card.png';
-
+import { motion, AnimatePresence } from 'framer-motion';
 
 const LottiePlayer = (Lottie as any).default || Lottie;
+
+// Predefined suggestion tags for the AI Assistant
+const PREDEFINED_TAGS = [
+  "How to save for a trip ✈️",
+  "Budget for the weekend 🍕",
+  "Optimize food expenses 🍏",
+  "Reduce subscription costs 🎬"
+];
+
+// TypewriterEffect Anim component
+const TypewriterEffect: React.FC<{ text: string }> = ({ text }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [isDone, setIsDone] = useState(false);
+
+  useEffect(() => {
+    setDisplayedText("");
+    setIsDone(false);
+    
+    let currentText = "";
+    const words = text.split(" ");
+    let i = 0;
+
+    const interval = setInterval(() => {
+      if (i < words.length) {
+        currentText += (i === 0 ? "" : " ") + words[i];
+        setDisplayedText(currentText);
+        i++;
+      } else {
+        setIsDone(true);
+        clearInterval(interval);
+      }
+    }, 40); // 40ms per word for a smooth but readable pace
+
+    return () => clearInterval(interval);
+  }, [text]);
+
+  const lines = displayedText.split("\n");
+
+  return (
+    <div className="space-y-3 w-full text-left font-sans">
+      <AnimatePresence mode="popLayout">
+        {lines.map((line, li) => {
+          if (!line.trim() && li < lines.length - 1) return <div key={li} className="h-3" />;
+          if (!line.trim()) return null;
+          
+          return (
+            <motion.p
+              key={li + (isDone ? "-done" : "-typing")}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-white/90 text-xs sm:text-sm leading-relaxed tracking-wide"
+            >
+              {line}
+            </motion.p>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Grok-powered AI Assistant Component
+const AIAssistant: React.FC = () => {
+  const [query, setQuery] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  const handleAskAI = async (textToSend: string) => {
+    if (!textToSend.trim() || isAiLoading) return;
+    setIsAiLoading(true);
+    setAiResponse("");
+
+    const GROK_KEY = import.meta.env.VITE_GROK_API;
+
+    const isProd = import.meta.env.PROD;
+    const url = isProd ? "https://api.x.ai/v1/chat/completions" : "/grok-api/chat/completions";
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROK_KEY}`
+        },
+        body: JSON.stringify({
+          model: "grok-beta",
+          messages: [
+            {
+              role: "system",
+              content: "You are FinBuddy AI, a witty and helpful student financial assistant helping students save money, budget, and live within their means. Keep your answers concise, practical (max 2-3 bullet points or 3-4 sentences), and highly relevant to student life in college. Do not use markdown headers, just plain text and bullet points."
+            },
+            {
+              role: "user",
+              content: textToSend
+            }
+          ],
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to communicate with Grok AI");
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that request.";
+      setAiResponse(content);
+    } catch (err) {
+      console.error("Grok AI error:", err);
+      setAiResponse("I'm having trouble connecting right now. Here's a tip: Try tracking smaller expenses like daily coffee and subscriptions; they add up fast!");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleAskAI(query);
+  };
+
+  return (
+    <Card variant="vessel" className="bg-[#121212] text-white p-5 rounded-[24px] border border-white/[0.08] shadow-xl flex flex-col justify-between text-left flex-1 min-h-[300px]">
+      <div className="flex flex-col gap-4">
+        {/* Header */}
+        <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-neon-green text-lg font-bold animate-pulse">psychology</span>
+            <span className="font-hanken text-[10px] uppercase font-bold tracking-widest text-white/50">Save-Smarter AI Assistant</span>
+          </div>
+          <span className="text-[8px] bg-white/5 text-white/40 border border-white/10 px-2 py-0.5 rounded-full font-bold">Grok-Beta AI</span>
+        </div>
+
+        {/* Suggestion Tags */}
+        {!aiResponse && !isAiLoading && (
+          <div className="flex flex-col gap-2">
+            <span className="font-hanken text-[9px] uppercase font-bold tracking-wider text-white/40">Suggested prompts:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {PREDEFINED_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    setQuery(tag);
+                    handleAskAI(tag);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 text-[9px] font-semibold text-white/70 hover:text-white transition-all cursor-pointer text-left"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic Response Box */}
+        <div className="flex-1 flex flex-col bg-white/[0.02] border border-white/5 p-4 rounded-2xl min-h-[140px] max-h-[220px] overflow-y-auto font-sans leading-relaxed select-text">
+          {isAiLoading ? (
+            <div className="flex flex-col items-center justify-center h-full w-full py-4 gap-2">
+              <div className="w-5 h-5 rounded-full border-2 border-t-neon-green border-white/10 animate-spin"></div>
+              <span className="text-[9px] text-white/40 uppercase font-black tracking-widest">Grokking student ledger...</span>
+            </div>
+          ) : aiResponse ? (
+            <TypewriterEffect text={aiResponse} />
+          ) : (
+            <p className="text-[11px] text-white/50 leading-relaxed font-sans text-left">
+              Hey! I am your FinBuddy AI. Click one of the suggestions above or ask me any question to start saving money today!
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Input Bar */}
+      <form onSubmit={handleFormSubmit} className="flex gap-2 border-t border-white/5 pt-3.5 mt-3">
+        <input
+          type="text"
+          placeholder="Ask AI how to save money..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="flex-1 px-3.5 py-2.5 rounded-xl text-xs bg-white/[0.03] text-white border border-white/10 focus:border-neon-green focus:ring-1 focus:ring-neon-green outline-none"
+        />
+        <button
+          type="submit"
+          disabled={isAiLoading || !query.trim()}
+          className="px-4 py-2.5 bg-neon-green text-[#121212] hover:bg-neon-green/90 rounded-xl font-hanken font-bold text-xs uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+        >
+          Ask
+        </button>
+      </form>
+    </Card>
+  );
+};
 
 interface StudentFinanceHomeProps {
   user: User;
@@ -476,10 +667,10 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
           ────────────────────────────── */}
       <div className="block lg:grid lg:grid-cols-12 gap-6 items-stretch">
         
-        {/* Col 1: Streak Stack */}
-        <div className="hidden lg:flex lg:col-span-4 flex-col gap-4">
+        {/* Col 1: Streak & Split Promo Stack */}
+        <div className="hidden lg:flex lg:col-span-3 flex-col gap-4">
           {/* Card 1.1: Streak Board (Short height) */}
-          <Card variant="light" className="bg-[#ffffff] text-[#121212] p-4.5 rounded-[24px] border border-outline-variant/30 flex flex-col gap-3 text-left shadow-md">
+          <Card variant="light" className="p-4.5 rounded-[24px] flex flex-col gap-3 text-left">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-1.5">
                 <span className="text-neon-green">🔥</span>
@@ -489,14 +680,14 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
             </div>
             
             {/* 7-day streak board calendar dots */}
-            <div className="grid grid-cols-7 gap-1 bg-[#f5f3f3] p-2.5 rounded-xl border border-black/5 text-center">
+            <div className="grid grid-cols-7 gap-1 bg-black/[0.03] p-2.5 rounded-xl border border-black/5 text-center">
               {STREAK_DAYS.map((dayObj, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
-                  <span className="text-[8px] text-black/40 uppercase font-semibold">{dayObj.day}</span>
+                  <span className="text-[8px] text-black/70 uppercase font-semibold">{dayObj.day}</span>
                   <div className={`w-6.5 h-6.5 rounded-full flex items-center justify-center transition-all ${
                     dayObj.streak 
                       ? 'bg-neon-green/20 border border-neon-green/45 text-neon-green shadow-[0_0_8px_rgba(15,238,101,0.2)]' 
-                      : 'bg-black/5 border border-black/5 text-black/30'
+                      : 'bg-black/5 border border-black/5 text-black/60 font-semibold'
                   }`}>
                     {dayObj.streak ? (
                       <span className="material-symbols-outlined text-[10px] font-bold">check</span>
@@ -507,35 +698,12 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
                 </div>
               ))}
             </div>
-            <p className="text-[9px] text-black/40 leading-relaxed font-sans">
+            <p className="text-[9px] text-black/70 leading-relaxed font-semibold font-sans">
               Sunday settlements increase health multipliers!
             </p>
           </Card>
 
-          {/* Card 1.2: Streak Rewards (Added below Streak Card) */}
-          <Card variant="light" className="bg-[#ffffff] text-[#121212] p-4.5 rounded-[24px] border border-outline-variant/30 flex flex-col justify-between text-left shadow-md flex-1">
-            <div className="flex justify-between items-center">
-              <span className="font-hanken text-[10px] uppercase font-bold tracking-wider text-[#121212]">Streak Rewards</span>
-              <span className="text-[9px] text-[#006e2a] font-bold">1.2x Boost Active</span>
-            </div>
-            <div className="my-1.5">
-              <div className="flex justify-between text-[9px] text-black/50 mb-1">
-                <span>Logging Multiplier Progress</span>
-                <span>5/10 Days</span>
-              </div>
-              <div className="w-full h-1.5 bg-[#f5f3f3] rounded-full overflow-hidden border border-black/5">
-                <div className="h-full bg-neon-green w-1/2 rounded-full" />
-              </div>
-            </div>
-            <p className="text-[9px] text-black/50 leading-relaxed font-sans">
-              Log daily allowance and expenses to claim the Leaderboard Multiplier.
-            </p>
-          </Card>
-        </div>
-
-        {/* Col 2: Split Promotional Stack */}
-        <div className="hidden lg:flex lg:col-span-4 flex-col gap-4">
-          {/* Card 2.1: Split Promotional Card */}
+          {/* Card 1.2: Split Promotional Card (Grouped in Col 1 Stack) */}
           <div 
             className="bg-[#1e2022] text-white rounded-[24px] p-4.5 relative overflow-hidden flex flex-col justify-between border border-white/10 shadow-xl min-h-[155px] cursor-pointer group active:scale-[0.98] transition-all duration-300"
             onClick={() => onTabChange('split')}
@@ -567,29 +735,12 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
               <span className="material-symbols-outlined text-[12px] font-bold transform group-hover:translate-x-1 transition-transform duration-200">arrow_forward</span>
             </button>
           </div>
+        </div>
 
-  {/* Card 2.2: Roomie Dues Card */}
-  <Card variant="light" className="bg-[#ffffff] text-[#121212] p-4.5 rounded-[24px] border border-outline-variant/30 flex flex-col justify-between text-left shadow-md flex-1">
-    <div className="flex justify-between items-center">
-      <span className="font-hanken text-[10px] uppercase font-bold tracking-wider text-[#121212]">Roomie Dues Status</span>
-      <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        No Dues
-      </span>
-    </div>
-    <div className="flex items-center gap-1 mt-1">
-      <div className="flex -space-x-1.5 overflow-hidden">
-        <span className="inline-flex w-5 h-5 rounded-full bg-emerald-100 border border-white text-[9px] items-center justify-center" title="Rohan">👦</span>
-        <span className="inline-flex w-5 h-5 rounded-full bg-emerald-100 border border-white text-[9px] items-center justify-center" title="Priya">👩‍🎓</span>
-        <span className="inline-flex w-5 h-5 rounded-full bg-emerald-100 border border-white text-[9px] items-center justify-center" title="Amit">👨‍🎓</span>
-      </div>
-      <span className="text-[9px] text-black/40 font-mono ml-1.5">Rohan, Priya & Amit cleared</span>
-    </div>
-    <p className="text-[9px] text-black/50 leading-relaxed font-sans mt-1">
-      All balances are settled for <code className="bg-black/5 px-1 py-0.5 rounded text-black/70">#COLAB-LUNCH-310</code>.
-    </p>
-  </Card>
-</div>
+        {/* Col 2: Save-Smarter AI Assistant (Width increased to lg:col-span-5) */}
+        <div className="hidden lg:flex lg:col-span-5 flex-col gap-4">
+          <AIAssistant />
+        </div>
 
         {/* Col 3: Dorm Leaderboard Card (Dark aspect-[3/4] size) */}
         <div className="hidden lg:block lg:col-span-4">
@@ -642,7 +793,7 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
         </div>
 
         {/* Mobile View Toggle card (Simple view all button) */}
-        <div className="block lg:hidden w-full">
+        <div className="block lg:hidden w-full flex flex-col gap-4">
           <Card 
             variant="vessel" 
             className="bg-[#121212] text-white p-5 rounded-[24px] border border-white/[0.08] flex items-center justify-between cursor-pointer"
@@ -668,6 +819,9 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
               View All
             </Button>
           </Card>
+
+          {/* Mobile AI Assistant Card */}
+          <AIAssistant />
         </div>
 
       </div>
@@ -817,14 +971,14 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
         {/* Recent Transactions (Light Mode, Mimicking list layout in image_1.png) */}
         <Card 
           variant="light" 
-          className="bg-[#ffffff] text-[#121212] p-6 rounded-[24px] border border-outline-variant/30 shadow-md flex flex-col gap-4 text-left w-full"
+          className="p-6 rounded-[24px] flex flex-col gap-4 text-left w-full"
         >
           <div className="flex justify-between items-center border-b border-black/5 pb-3">
             <div>
               <h3 className="font-hanken text-sm font-black uppercase tracking-wider text-[#121212]">
                 RECENT TRANSACTIONS
               </h3>
-              <span className="text-[10px] text-black/50">Real-time ledger audit log</span>
+              <span className="text-[10px] text-on-surface-variant font-medium">Real-time ledger audit log</span>
             </div>
             <span className="text-xs bg-black/5 text-[#121212] border border-black/10 px-2 py-0.5 rounded-full font-bold">
               {filteredRecentTransactions.length} logs
@@ -832,8 +986,8 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
           </div>
 
           {filteredRecentTransactions.length === 0 ? (
-            <div className="py-12 text-center text-black/40 flex flex-col items-center justify-center">
-              <span className="material-symbols-outlined text-4xl mb-2 text-black/20">receipt_long</span>
+            <div className="py-12 text-center text-black/75 flex flex-col items-center justify-center">
+              <span className="material-symbols-outlined text-4xl mb-2 text-black/40">receipt_long</span>
               <p className="text-xs font-semibold">No recent transactions matches filters</p>
             </div>
           ) : (
@@ -852,12 +1006,12 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
                 return (
                   <div 
                     key={tx.id}
-                    className="flex justify-between items-center bg-[#fbf9f8] hover:bg-[#efeded]/50 p-3 rounded-xl border border-black/5 transition-all duration-200"
+                    className="flex justify-between items-center bg-surface hover:bg-surface-container/50 p-3 rounded-xl border border-outline-variant/30 transition-all duration-200"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center bg-white border border-black/5 shadow-sm text-lg`}>
-                        <span className="material-symbols-outlined text-sm font-bold text-black/70">
-                          {icon}
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center bg-white border border-outline-variant/30 shadow-sm text-lg`}>
+                        <span className="material-symbols-outlined text-sm font-bold text-[#121212]/80">
+                           {icon}
                         </span>
                       </div>
                       <div className="flex flex-col text-left">
@@ -868,7 +1022,7 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
                           <span className="text-[9px] text-emerald-700 font-extrabold uppercase bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                             {tx.category}
                           </span>
-                          <span className="text-[9px] text-black/40 font-mono">
+                          <span className="text-[9px] text-on-surface-variant font-mono font-semibold">
                             {tx.date}
                           </span>
                         </div>

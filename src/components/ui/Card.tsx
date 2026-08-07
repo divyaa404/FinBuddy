@@ -16,7 +16,7 @@ export const Card: React.FC<CardProps> = ({
   
   const variants = {
     vessel: 'bg-[#1e2022] text-white border border-white/10 p-6',
-    light: 'bg-white text-on-surface border border-outline-variant/30 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.03)] p-6'
+    light: 'bg-white text-[#121212] border border-black/[0.08] shadow-[0_12px_30px_rgba(0,0,0,0.04)] p-6'
   };
 
   const glowStyle = (variant === 'vessel' && glow) 

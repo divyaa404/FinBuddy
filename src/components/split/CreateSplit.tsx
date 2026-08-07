@@ -145,7 +145,7 @@ export const CreateSplit: React.FC<CreateSplitProps> = ({
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {GUIDE_STEPS.map((stepObj) => (
-            <Card key={stepObj.step} variant="light" className="bg-[#ffffff] text-[#121212] p-4.5 rounded-[20px] border border-outline-variant/30 shadow-sm flex flex-col gap-2.5 text-left">
+            <Card key={stepObj.step} variant="light" className="p-4.5 rounded-[20px] flex flex-col gap-2.5 text-left">
               <div className="w-6 h-6 rounded-full bg-neon-green/10 text-neon-green border border-neon-green/20 flex items-center justify-center font-bold text-xs">
                 {stepObj.step}
               </div>
@@ -333,13 +333,13 @@ export const CreateSplit: React.FC<CreateSplitProps> = ({
       )}
 
       {/* 5. Recent Split Sessions History Log (New visual depth) */}
-      <Card variant="light" className="bg-[#ffffff] text-[#121212] p-6 rounded-[24px] border border-outline-variant/30 shadow-md flex flex-col gap-4 text-left">
+      <Card variant="light" className="p-6 rounded-[24px] flex flex-col gap-4 text-left">
         <div className="flex justify-between items-center border-b border-black/5 pb-3">
           <div>
             <h3 className="font-hanken text-sm font-black uppercase tracking-wider text-[#121212]">
               Recent Split History
             </h3>
-            <span className="text-[10px] text-black/50">Audit log of your split sessions</span>
+            <span className="text-[10px] text-on-surface-variant font-medium font-sans">Audit log of your split sessions</span>
           </div>
           <span className="text-xs bg-black/5 text-[#121212] border border-black/10 px-2.5 py-0.5 rounded-full font-bold">
             {SPLIT_HISTORY.length} sessions
@@ -350,11 +350,11 @@ export const CreateSplit: React.FC<CreateSplitProps> = ({
           {SPLIT_HISTORY.map((history) => (
             <div 
               key={history.id}
-              className="flex justify-between items-center bg-[#fbf9f8] hover:bg-[#efeded]/50 p-3.5 rounded-xl border border-black/5 transition-all duration-200"
+              className="flex justify-between items-center bg-surface hover:bg-surface-container/50 p-3.5 rounded-xl border border-outline-variant/30 transition-all duration-200"
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white border border-black/5 shadow-sm text-lg">
-                  <span className="material-symbols-outlined text-sm font-bold text-black/70">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white border border-outline-variant/30 shadow-sm text-lg">
+                  <span className="material-symbols-outlined text-sm font-bold text-[#121212]/80">
                     {history.category === 'Food' ? 'coffee' : 'directions_bus'}
                   </span>
                 </div>
@@ -366,7 +366,7 @@ export const CreateSplit: React.FC<CreateSplitProps> = ({
                     <span className="text-[9px] text-emerald-700 font-extrabold uppercase bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                       {history.category}
                     </span>
-                    <span className="text-[9px] text-black/40 font-mono">
+                    <span className="text-[9px] text-on-surface-variant font-mono font-semibold">
                       Mode: {history.mode}
                     </span>
                   </div>
@@ -378,7 +378,7 @@ export const CreateSplit: React.FC<CreateSplitProps> = ({
                   <span className="text-xs font-extrabold numeric-display text-[#121212]">
                     ₹{history.amount.toLocaleString()}
                   </span>
-                  <span className="text-[9px] text-black/40 font-mono">
+                  <span className="text-[9px] text-on-surface-variant font-mono font-semibold">
                     {history.date}
                   </span>
                 </div>

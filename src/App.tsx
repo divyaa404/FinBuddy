@@ -198,7 +198,7 @@ function App() {
   return (
     <AuthGate>
       {(user: User) => (
-        <div className="flex flex-col min-h-screen bg-[#fbf9f8] relative md:flex-row">
+        <div className="flex flex-col min-h-screen bg-surface relative md:flex-row">
           
           {/* Web/Desktop Sidebar */}
           <Sidebar 
