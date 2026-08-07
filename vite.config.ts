@@ -3,13 +3,17 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    react({
+      babel: {
+        presets: [reactCompilerPreset()],
+        plugins: [babel()],
+      },
+    }),
     tailwindcss(),
-    react(),
-    babel({ presets: [reactCompilerPreset()] })
   ],
+
   server: {
     proxy: {
       '/grok-api': {
@@ -17,10 +21,9 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/grok-api/, ''),
         headers: {
-          'Origin': 'https://api.x.ai'
-        }
-      }
-    }
-  }
+          Origin: 'https://api.x.ai',
+        },
+      },
+    },
+  },
 })
-
