@@ -167,7 +167,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fbf9f8] flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6">
         <div className="w-40 h-40">
           <LottiePlayer animationData={loadingMainAnim} loop={true} />
         </div>

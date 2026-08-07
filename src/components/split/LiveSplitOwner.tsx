@@ -4,11 +4,12 @@ import { subscribeToSplit, subscribeToParticipants, finalizeSplitBill } from '..
 import type { Split, Participant, Transaction } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import joiningSound from '../../assets/sounds/joining.mp3';
 import successSound from '../../assets/sounds/success.mp3';
 import Lottie from 'lottie-react';
 import loadingMainAnim from '../../assets/animations/loading_main.json';
+import fetchLoadingAnim from '../../assets/animations/fetch_loading.json';
 
 const LottiePlayer = (Lottie as any).default || Lottie;
 
@@ -29,6 +30,9 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
   const [hostOwed, setHostOwed] = useState(0);
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // Slider coordinates state for spring-back smoothness
+  const [sliderX, setSliderX] = useState(0);
+
   // Guarantee minimum 2-second loading state for clean transitions
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -43,7 +47,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [dragWidth, setDragWidth] = useState(220);
 
-  // 1. Subscribe to Split metadata changes
+  // Subscribe to Split metadata changes
   useEffect(() => {
     const unsub = subscribeToSplit(splitId, (data) => {
       setSplitData(data);
@@ -51,7 +55,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
     return () => unsub();
   }, [splitId]);
 
-  // 2. Subscribe to joined participants changes
+  // Subscribe to joined participants changes
   useEffect(() => {
     const unsub = subscribeToParticipants(splitId, (list) => {
       setParticipants(list);
@@ -72,7 +76,43 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
     }
   }, [isInitializing, participants.length]);
 
-  // 3. Mathematical Bill Splitting Calculation
+  // WhatsApp Share Feature
+  const handleShareWhatsApp = () => {
+    const text = `Hey roomies! Join my live split session on FinBuddy to split our bill: ${participantUrl}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  // SVG to PNG QR download share feature
+  const handleDownloadQR = () => {
+    const svg = document.getElementById('split-qr-svg');
+    if (!svg) return;
+    const svgString = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const URL = window.URL || window.webkitURL || window;
+    const blobURL = URL.createObjectURL(svgBlob);
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 200;
+      canvas.height = 200;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 34, 34, 132, 132); // Centers SVG inside canvas
+        const png = canvas.toDataURL('image/png');
+        const downloadLink = document.createElement('a');
+        downloadLink.href = png;
+        downloadLink.download = `finbuddy-split-qr-${splitId}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
+    };
+    image.src = blobURL;
+  };
+
+  // Mathematical Bill Splitting Calculation
   const handleSplitNow = async () => {
     if (!splitData) return;
     setLoading(true);
@@ -80,37 +120,29 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
     try {
       const calculatedAmounts: { [participantId: string]: number } = {};
       const numPeople = participants.length + 1; // including Host
-      const gstMultiplier = 1 + (splitData.gstPercent / 100);
+      const gstMultiplier = 1 + ((splitData.gstPercent || 0) / 100);
 
       let ownerAmount = 0;
 
       if (splitData.mode === 'even') {
-        // Even split across all who joined + host
-        const share = (splitData.totalAmount * gstMultiplier) / numPeople;
+        const share = ((splitData.totalAmount || 0) * gstMultiplier) / numPeople;
         participants.forEach(p => {
           calculatedAmounts[p.id] = share;
         });
         ownerAmount = share;
       } else {
-        // Itemized mode calculation
         const items = splitData.items || [];
         const itemSelectors: { [itemId: string]: string[] } = {};
 
-        // Find who selected which items
         items.forEach(item => {
           itemSelectors[item.id] = [];
-          
-          // Check if host selected it (host selects everything by default if empty, or let's assume hosts splits the rest)
-          // For demo, we split the item cost among all participants who checked it.
-          // If nobody selected an item, it goes to the host.
           participants.forEach(p => {
-            if (p.selectedItemIds.includes(item.id)) {
+            if ((p.selectedItemIds || []).includes(item.id)) {
               itemSelectors[item.id].push(p.id);
             }
           });
         });
 
-        // Calculate cost per item and distribute
         const participantSums: { [pId: string]: number } = {};
         participants.forEach(p => { participantSums[p.id] = 0; });
         
@@ -124,35 +156,29 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
               participantSums[pId] += splitPrice;
             });
           } else {
-            // Unselected items are paid by host
             unselectedItemsTotal += item.price * gstMultiplier;
           }
         });
 
-        // Map sums back to calculations
         participants.forEach(p => {
           calculatedAmounts[p.id] = participantSums[p.id];
         });
 
-        // Host pays unselected items + any specific host selection (for simplicity, host pays remainder of bill)
         const totalGuestsOwed = Object.values(participantSums).reduce((s, val) => s + val, 0);
-        ownerAmount = (splitData.totalAmount * gstMultiplier) - totalGuestsOwed;
+        ownerAmount = ((splitData.totalAmount || 0) * gstMultiplier) - totalGuestsOwed;
       }
 
       setHostOwed(ownerAmount);
 
-      // Play success audio
       const audio = new Audio(successSound);
       audio.play().catch(e => console.error("Audio playback error:", e));
 
-      // Write calculations back to Firestore and finalize status
       await finalizeSplitBill(splitId, participants, calculatedAmounts);
 
-      // Log Host's transaction inside main dashboard automatically
       onRecordSplitTransaction({
         amount: parseFloat(ownerAmount.toFixed(2)),
         type: 'expense',
-        category: 'Shopping', // Group Expense category
+        category: 'Shopping',
         date: new Date().toISOString().split('T')[0],
         note: `Group Split: ${splitData.mode === 'even' ? 'Even' : 'Itemized'} (FinBuddy)`
       });
@@ -160,13 +186,16 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
     } catch (error) {
       console.error('Finalize split error:', error);
     } finally {
-      setLoading(false);
+      // Small timeout to allow animation visual flow to complete
+      setTimeout(() => {
+        setLoading(false);
+      }, 800);
     }
   };
 
   if (!splitData || isInitializing) {
     return (
-      <Card variant="vessel" className="py-12 flex flex-col items-center justify-center text-white/40 border border-white/[0.08]">
+      <Card variant="vessel" className="py-12 flex flex-col items-center justify-center text-white/40 border border-white/[0.08] backdrop-blur-md bg-white/[0.03]">
         <div className="w-32 h-32">
           <LottiePlayer animationData={loadingMainAnim} loop={true} />
         </div>
@@ -180,13 +209,31 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
   const allSettled = participants.length > 0 && totalSettled === participants.length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left w-full relative">
       
+      {/* 1. Loading Overlay when Splitting is processing */}
+      <AnimatePresence>
+        {loading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/75 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center z-50 p-6 text-center"
+          >
+            <div className="w-36 h-36">
+              <LottiePlayer animationData={fetchLoadingAnim} loop={true} />
+            </div>
+            <h4 className="font-hanken text-sm font-bold text-white uppercase tracking-wider mt-2">Computing Shared Ratios</h4>
+            <p className="text-[10px] text-white/50 max-w-[200px] mt-1 font-sans">Calculating line items, taxes and recording directly in dorm ledger...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Host Control Deck (Left Side) */}
       <div className="lg:col-span-7 flex flex-col gap-6">
         
         {/* QR Code and Meta Vessel */}
-        <Card variant="vessel" className="p-6 border border-white/[0.08] rounded-2xl flex flex-col gap-5">
+        <Card variant="vessel" className="p-6 border border-white/[0.08] rounded-2xl flex flex-col gap-5 bg-white/[0.02] backdrop-blur-md">
           <div className="flex justify-between items-start border-b border-white/5 pb-3">
             <div>
               <span className="text-[9px] uppercase tracking-wider text-neon-green font-extrabold px-2 py-0.5 rounded bg-neon-green/10 border border-neon-green/20">
@@ -199,45 +246,66 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
             
             <div className="text-right">
               <span className="text-white/40 text-[10px] uppercase font-bold tracking-wider font-hanken">Total Bill</span>
-              <p className="text-lg font-bold text-white numeric-display">₹{splitData.totalAmount.toLocaleString()}</p>
+              <p className="text-lg font-bold text-white numeric-display">₹{(splitData.totalAmount || 0).toLocaleString()}</p>
             </div>
           </div>
 
           {!isFinalized ? (
             /* LOBBY VIEW */
-            <div className="flex flex-col sm:flex-row items-center gap-6 py-2">
-              {/* QR Code Graphic Container */}
-              <div className="bg-white p-3.5 rounded-2xl shadow-xl flex-shrink-0 flex items-center justify-center border border-white/10 select-none">
-                <QRCodeSVG value={participantUrl} size={132} level="H" />
+            <div className="flex flex-col gap-6 py-2">
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                {/* QR Code Container with Image Download Option */}
+                <div className="relative group flex flex-col items-center gap-2">
+                  <div className="bg-white p-3 rounded-2xl shadow-xl flex-shrink-0 flex items-center justify-center border border-white/10 select-none">
+                    <QRCodeSVG id="split-qr-svg" value={participantUrl} size={128} level="H" />
+                  </div>
+                </div>
+
+                {/* Dynamic Share & Guide block */}
+                <div className="flex-1 flex flex-col gap-3 text-left w-full">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-hanken text-xs font-extrabold uppercase tracking-wider text-white/50">Lobby Link</span>
+                    <p className="text-xs text-white/80 leading-normal">
+                      Have roomies scan the QR or share this joining link:
+                    </p>
+                  </div>
+                  <div className="bg-[#121214] text-neon-green text-[10px] p-2.5 rounded-xl font-mono break-all border border-white/5 select-all">
+                    {participantUrl}
+                  </div>
+                </div>
               </div>
 
-              {/* Dynamic Steps */}
-              <div className="flex flex-col gap-2 text-left">
-                <span className="font-hanken text-xs font-extrabold uppercase tracking-wider text-white/50">Lobby QR</span>
-                <p className="text-xs text-white/80 leading-relaxed">
-                  Have participants scan this QR or navigate to:
-                </p>
-                <div className="bg-[#1b1c1c] text-neon-green text-[10px] p-2 rounded-lg font-mono break-all border border-white/5 select-all">
-                  {participantUrl}
-                </div>
-                <p className="text-[10px] text-white/40 mt-1">
-                  * No login required for joining roomies.
-                </p>
+              {/* Whatsapp & Image Download Action panel (WhatsApp Share feature) */}
+              <div className="grid grid-cols-2 gap-3 mt-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl">
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="flex items-center justify-center gap-2 py-2 px-3 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 hover:border-[#25D366]/40 text-[#25D366] rounded-xl font-hanken font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">share</span>
+                  Share on WhatsApp
+                </button>
+                <button
+                  onClick={handleDownloadQR}
+                  className="flex items-center justify-center gap-2 py-2 px-3 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-white rounded-xl font-hanken font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">download</span>
+                  Save QR Image
+                </button>
               </div>
             </div>
           ) : (
             /* FINALIZED SETTLEMENT STATUS */
-            <div className="bg-[#1b1c1c] p-4 rounded-xl border border-white/5 flex flex-col gap-3">
+            <div className="bg-[#121214] p-4.5 rounded-2xl border border-white/5 flex flex-col gap-3.5">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-white/60">Finalized Split Ratio:</span>
-                <span className="text-neon-green font-bold">
+                <span className="text-neon-green font-bold uppercase text-[10px]">
                   {splitData.mode === 'even' ? 'Evenly Distributed' : 'Itemized Selections'}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-xs">
+              <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2">
                 <span className="text-white/60">Your net share (Host):</span>
                 <span className="text-white font-extrabold numeric-display">
-                  ₹{hostOwed > 0 ? hostOwed.toFixed(2) : (splitData.totalAmount / (participants.length + 1)).toFixed(2)}
+                  ₹{(hostOwed || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="w-full h-1.5 bg-[#222] rounded-full overflow-hidden mt-1">
@@ -246,9 +314,11 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
                   style={{ width: `${participants.length > 0 ? (totalSettled / participants.length) * 100 : 100}%` }}
                 ></div>
               </div>
-              <div className="flex justify-between text-[10px] text-white/40">
+              <div className="flex justify-between text-[9px] uppercase font-bold tracking-wider text-white/40">
                 <span>Settled: {totalSettled} / {participants.length} roomies</span>
-                <span>{allSettled ? 'All Clear!' : 'Awaiting Settlements...'}</span>
+                <span className={allSettled ? 'text-neon-green' : 'text-yellow-500 animate-pulse'}>
+                  {allSettled ? 'All Clear!' : 'Awaiting Settlements...'}
+                </span>
               </div>
             </div>
           )}
@@ -257,30 +327,38 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
           <div className="flex flex-col gap-4 border-t border-white/5 pt-4">
             {!isFinalized ? (
               <div className="flex flex-col gap-2">
-                <label className="font-hanken text-[10px] uppercase font-bold tracking-wider text-white/50 text-center">
-                  Swipe right to split bill
+                <label className="font-hanken text-[9px] uppercase font-bold tracking-widest text-white/40 text-center">
+                  {participants.length === 0 ? 'Waiting for roomies to connect' : 'Swipe handle to split bill'}
                 </label>
                 <div 
                   ref={containerRef}
-                  className="relative w-full h-14 bg-[#232629] border border-white/10 rounded-full flex items-center justify-center overflow-hidden shadow-inner"
+                  className="relative w-full h-14 bg-[#121214] border border-white/10 rounded-full flex items-center justify-center overflow-hidden shadow-inner"
                 >
-                  <span className="font-hanken text-[10px] uppercase font-black tracking-widest text-white/40 animate-pulse pointer-events-none select-none">
-                    {loading ? 'Splitting...' : participants.length === 0 ? 'Lobby is Empty' : 'Slide to Split >>>'}
+                  <span className="font-hanken text-[10px] uppercase font-black tracking-widest text-white/30 animate-pulse pointer-events-none select-none">
+                    {participants.length === 0 ? 'Lobby is Empty' : 'Slide to Split >>>'}
                   </span>
 
-                  {participants.length > 0 && !loading && (
+                  {participants.length > 0 && (
                     <motion.div
                       drag="x"
                       dragConstraints={{ left: 0, right: dragWidth }}
                       dragElastic={0.05}
                       dragMomentum={false}
+                      animate={{ x: sliderX }}
+                      onDrag={(_event, info) => {
+                        setSliderX(info.offset.x);
+                      }}
                       onDragEnd={(_event, info) => {
                         if (info.offset.x >= dragWidth * 0.85) {
+                          setSliderX(dragWidth);
                           handleSplitNow();
+                        } else {
+                          setSliderX(0); // smooth spring back snap
                         }
                       }}
+                      transition={{ type: 'spring', stiffness: 450, damping: 28 }}
                       whileTap={{ scale: 0.95 }}
-                      className="absolute left-1 w-12 h-12 rounded-full bg-neon-green text-[#121212] flex items-center justify-center cursor-grab active:cursor-grabbing shadow-[0_0_15px_rgba(15,238,101,0.5)] z-20 transition-transform"
+                      className="absolute left-1 w-12 h-12 rounded-full bg-neon-green text-[#121212] flex items-center justify-center cursor-grab active:cursor-grabbing shadow-[0_0_15px_rgba(15,238,101,0.5)] z-20"
                     >
                       <span className="material-symbols-outlined font-bold pointer-events-none">arrow_forward</span>
                     </motion.div>
@@ -289,11 +367,11 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
               </div>
             ) : null}
             
-            <div className="flex gap-3 mt-1">
+            <div className="flex gap-3">
               <Button 
                 variant="secondary" 
                 onClick={onReset} 
-                className="flex-1 text-xs"
+                className="flex-1 text-xs uppercase tracking-wider py-3 rounded-xl cursor-pointer"
               >
                 Close View
               </Button>
@@ -309,35 +387,35 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
         </h4>
 
         {participants.length === 0 ? (
-          <Card variant="vessel" className="py-12 text-center text-white/40 flex flex-col items-center justify-center border border-white/[0.08] min-h-[220px]">
-            <span className="material-symbols-outlined text-4xl mb-2 text-white/20 animate-pulse">groups</span>
+          <Card variant="vessel" className="py-12 text-center text-white/40 flex flex-col items-center justify-center border border-white/[0.08] min-h-[220px] bg-white/[0.02] backdrop-blur-md">
+            <span className="material-symbols-outlined text-4xl mb-2 text-white/25 animate-pulse">groups</span>
             <p className="text-xs font-semibold">Awaiting roomies to join...</p>
-            <p className="text-[10px] text-white/30 max-w-[200px] mt-1 mx-auto">Scan the QR code to connect mobile view</p>
+            <p className="text-[10px] text-white/30 max-w-[200px] mt-1 mx-auto font-sans leading-relaxed">Roomies scan QR or browse the lobby link to select items live</p>
           </Card>
         ) : (
-          <div className="flex flex-col gap-3 max-h-[360px] overflow-y-auto pr-1">
+          <div className="flex flex-col gap-3 max-h-[380px] overflow-y-auto pr-1">
             {participants.map(p => (
               <div 
                 key={p.id}
-                className={`flex justify-between items-center p-4 rounded-xl border transition-all duration-300 ${
+                className={`flex justify-between items-center p-3.5 rounded-2xl border transition-all duration-300 ${
                   p.hasPaid 
                     ? 'bg-neon-green/5 border-neon-green/20' 
-                    : 'bg-[#121212] border-white/5'
+                    : 'bg-[#121214] border-white/5 shadow-md'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold uppercase ${
-                    p.hasPaid ? 'bg-neon-green text-[#121212]' : 'bg-[#222] text-white'
+                  <div className={`w-8.5 h-8.5 rounded-full flex items-center justify-center text-xs font-extrabold uppercase ${
+                    p.hasPaid ? 'bg-neon-green text-[#121212]' : 'bg-[#222] text-white/80'
                   }`}>
                     {p.name.slice(0, 2)}
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="text-sm font-semibold text-white">{p.name}</span>
-                    <span className="text-[9px] text-white/40 font-mono">
+                    <span className="text-xs font-bold text-white">{p.name}</span>
+                    <span className="text-[9px] text-white/40 font-mono mt-0.5">
                       {isFinalized 
                         ? (p.hasPaid ? 'Settled successfully' : 'Pending payment') 
                         : (splitData.mode === 'itemized' 
-                          ? `${p.selectedItemIds.length} items checked` 
+                          ? `${(p.selectedItemIds || []).length} items checked` 
                           : 'Even split')
                       }
                     </span>
@@ -347,21 +425,21 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
                 <div className="flex items-center gap-3">
                   {isFinalized ? (
                     <>
-                      <span className="text-sm font-bold text-white numeric-display">
-                        ₹{p.amountOwed.toLocaleString()}
+                      <span className="text-xs font-bold text-white numeric-display">
+                        ₹{(p.amountOwed || 0).toLocaleString()}
                       </span>
                       {p.hasPaid ? (
-                        <span className="material-symbols-outlined text-neon-green font-bold text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
+                        <span className="material-symbols-outlined text-neon-green font-bold text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
                           check_circle
                         </span>
                       ) : (
-                        <span className="material-symbols-outlined text-yellow-500 text-lg animate-pulse">
+                        <span className="material-symbols-outlined text-yellow-500 text-base animate-pulse">
                           pending
                         </span>
                       )}
                     </>
                   ) : (
-                    <span className="material-symbols-outlined text-white/20 text-sm font-bold">
+                    <span className="material-symbols-outlined text-white/25 text-sm font-bold">
                       check_circle
                     </span>
                   )}
