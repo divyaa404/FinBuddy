@@ -1,203 +1,175 @@
 import React, { useState, useEffect } from 'react';
 import type { User } from 'firebase/auth';
-import type { Transaction, Budget } from '../../types';
+import type { Transaction, Budget, SubscriptionItem } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { AnimatedBalance } from './AnimatedBalance';
 import Lottie from 'lottie-react';
 import trophyAnim from '../../assets/animations/Trophy.json';
 import splitCardImg from '../../assets/images/split_card.png';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const LottiePlayer = (Lottie as any).default || Lottie;
 
-// Predefined suggestion tags for the AI Assistant
-const PREDEFINED_TAGS = [
-  "How to save for a trip ✈️",
-  "Budget for the weekend 🍕",
-  "Optimize food expenses 🍏",
-  "Reduce subscription costs 🎬"
-];
+// Study & Utility Subscriptions Tracker Component
+interface SubscriptionsTrackerProps {
+  budgets: Budget[];
+}
 
-// TypewriterEffect Anim component
-const TypewriterEffect: React.FC<{ text: string }> = ({ text }) => {
-  const [displayedText, setDisplayedText] = useState("");
-  const [isDone, setIsDone] = useState(false);
+const SubscriptionsTracker: React.FC<SubscriptionsTrackerProps> = ({ budgets }) => {
+  const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>(() => {
+    const saved = localStorage.getItem('home_subscriptions');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 'sub_spotify', name: 'Spotify Premium', cost: 199, isActive: true, category: 'Subscriptions' },
+      { id: 'sub_notion', name: 'Notion Plus', cost: 400, isActive: true, category: 'Subscriptions' },
+      { id: 'sub_chatgpt', name: 'ChatGPT Plus', cost: 1999, isActive: true, category: 'Subscriptions' }
+    ];
+  });
+
+  const [newName, setNewName] = useState('');
+  const [newCost, setNewCost] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
-    setDisplayedText("");
-    setIsDone(false);
-    
-    let currentText = "";
-    const words = text.split(" ");
-    let i = 0;
+    localStorage.setItem('home_subscriptions', JSON.stringify(subscriptions));
+  }, [subscriptions]);
 
-    const interval = setInterval(() => {
-      if (i < words.length) {
-        currentText += (i === 0 ? "" : " ") + words[i];
-        setDisplayedText(currentText);
-        i++;
-      } else {
-        setIsDone(true);
-        clearInterval(interval);
-      }
-    }, 40); // 40ms per word for a smooth but readable pace
-
-    return () => clearInterval(interval);
-  }, [text]);
-
-  const lines = displayedText.split("\n");
-
-  return (
-    <div className="space-y-3 w-full text-left font-sans">
-      <AnimatePresence mode="popLayout">
-        {lines.map((line, li) => {
-          if (!line.trim() && li < lines.length - 1) return <div key={li} className="h-3" />;
-          if (!line.trim()) return null;
-          
-          return (
-            <motion.p
-              key={li + (isDone ? "-done" : "-typing")}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-white/90 text-xs sm:text-sm leading-relaxed tracking-wide"
-            >
-              {line}
-            </motion.p>
-          );
-        })}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-// Grok-powered AI Assistant Component
-const AIAssistant: React.FC = () => {
-  const [query, setQuery] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
-  const [isAiLoading, setIsAiLoading] = useState(false);
-
-  const handleAskAI = async (textToSend: string) => {
-    if (!textToSend.trim() || isAiLoading) return;
-    setIsAiLoading(true);
-    setAiResponse("");
-
-    const GROK_KEY = import.meta.env.VITE_GROK_API;
-
-    const isProd = import.meta.env.PROD;
-    const url = isProd ? "https://api.x.ai/v1/chat/completions" : "/grok-api/chat/completions";
-
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROK_KEY}`
-        },
-        body: JSON.stringify({
-          model: "grok-beta",
-          messages: [
-            {
-              role: "system",
-              content: "You are FinBuddy AI, a witty and helpful student financial assistant helping students save money, budget, and live within their means. Keep your answers concise, practical (max 2-3 bullet points or 3-4 sentences), and highly relevant to student life in college. Do not use markdown headers, just plain text and bullet points."
-            },
-            {
-              role: "user",
-              content: textToSend
-            }
-          ],
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to communicate with Grok AI");
-      }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that request.";
-      setAiResponse(content);
-    } catch (err) {
-      console.error("Grok AI error:", err);
-      setAiResponse("I'm having trouble connecting right now. Here's a tip: Try tracking smaller expenses like daily coffee and subscriptions; they add up fast!");
-    } finally {
-      setIsAiLoading(false);
-    }
+  const toggleSubscription = (id: string) => {
+    setSubscriptions(prev => prev.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const addSubscription = (e: React.FormEvent) => {
     e.preventDefault();
-    handleAskAI(query);
+    const cost = parseFloat(newCost);
+    if (!newName.trim() || isNaN(cost) || cost <= 0) return;
+
+    const newSub: SubscriptionItem = {
+      id: `sub_${Date.now()}`,
+      name: newName.trim(),
+      cost,
+      isActive: true,
+      category: 'Subscriptions'
+    };
+
+    setSubscriptions(prev => [...prev, newSub]);
+    setNewName('');
+    setNewCost('');
+    setShowAddForm(false);
   };
 
+  const deleteSubscription = (id: string) => {
+    setSubscriptions(prev => prev.filter(s => s.id !== id));
+  };
+
+  const subBudget = budgets.find(b => b.category === 'Subscriptions');
+  const subLimit = subBudget ? subBudget.limit : 1000;
+
+  const activeCost = subscriptions
+    .filter(s => s.isActive)
+    .reduce((sum, s) => sum + s.cost, 0);
+
+  const fitsBudget = activeCost <= subLimit;
+
   return (
-    <Card variant="vessel" className="bg-[#121212] text-white p-5 rounded-[24px] border border-white/[0.08] shadow-xl flex flex-col justify-between text-left flex-1 min-h-[300px]">
+    <Card variant="vessel" className="bg-[#121212] text-white p-5 rounded-[24px] border border-white/[0.08] shadow-xl flex flex-col justify-start text-left h-full">
       <div className="flex flex-col gap-4">
         {/* Header */}
         <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
           <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-neon-green text-lg font-bold animate-pulse">psychology</span>
-            <span className="font-hanken text-[10px] uppercase font-bold tracking-widest text-white/50">Save-Smarter AI Assistant</span>
+            <span className="material-symbols-outlined text-neon-green text-lg font-bold">subscriptions</span>
+            <span className="font-hanken text-[10px] uppercase font-bold tracking-widest text-white/50">Subscriptions Audit (Study & Tech)</span>
           </div>
-          <span className="text-[8px] bg-white/5 text-white/40 border border-white/10 px-2 py-0.5 rounded-full font-bold">Grok-Beta AI</span>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="text-[9px] bg-white/5 hover:bg-white/10 text-neon-green border border-white/10 px-2 py-0.5 rounded font-bold cursor-pointer transition-colors"
+          >
+            {showAddForm ? 'Cancel' : '+ Add New'}
+          </button>
         </div>
 
-        {/* Suggestion Tags */}
-        {!aiResponse && !isAiLoading && (
-          <div className="flex flex-col gap-2">
-            <span className="font-hanken text-[9px] uppercase font-bold tracking-wider text-white/40">Suggested prompts:</span>
-            <div className="flex flex-wrap gap-1.5">
-              {PREDEFINED_TAGS.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => {
-                    setQuery(tag);
-                    handleAskAI(tag);
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 text-[9px] font-semibold text-white/70 hover:text-white transition-all cursor-pointer text-left"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Add Form */}
+        {showAddForm && (
+          <form onSubmit={addSubscription} className="flex gap-2 bg-white/[0.02] p-3 rounded-xl border border-white/5">
+            <input
+              type="text"
+              placeholder="Name (e.g. Cursor)"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded-lg text-[10px] bg-white/5 text-white border border-white/10 outline-none"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Cost"
+              value={newCost}
+              onChange={(e) => setNewCost(e.target.value)}
+              className="w-20 px-2.5 py-1.5 rounded-lg text-[10px] bg-white/5 text-white border border-white/10 outline-none font-bold"
+              required
+              min="1"
+            />
+            <button
+              type="submit"
+              className="px-3 py-1.5 bg-neon-green text-black hover:bg-neon-green/90 rounded-lg text-[10px] font-bold cursor-pointer border-none"
+            >
+              Add
+            </button>
+          </form>
         )}
 
-        {/* Dynamic Response Box */}
-        <div className="flex-1 flex flex-col bg-white/[0.02] border border-white/5 p-4 rounded-2xl min-h-[140px] max-h-[220px] overflow-y-auto font-sans leading-relaxed select-text">
-          {isAiLoading ? (
-            <div className="flex flex-col items-center justify-center h-full w-full py-4 gap-2">
-              <div className="w-5 h-5 rounded-full border-2 border-t-neon-green border-white/10 animate-spin"></div>
-              <span className="text-[9px] text-white/40 uppercase font-black tracking-widest">Grokking student ledger...</span>
-            </div>
-          ) : aiResponse ? (
-            <TypewriterEffect text={aiResponse} />
-          ) : (
-            <p className="text-[11px] text-white/50 leading-relaxed font-sans text-left">
-              Hey! I am your FinBuddy AI. Click one of the suggestions above or ask me any question to start saving money today!
-            </p>
+        {/* Budget Fit Status Banner */}
+        <div className={`p-3 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+          fitsBudget 
+            ? 'bg-[#0fee65]/15 text-neon-green border-[#0fee65]/35' 
+            : 'bg-red-500/10 text-red-400 border-red-500/20'
+        }`}>
+          <div className="flex flex-col text-left">
+            <span className="font-bold">{fitsBudget ? '🟢 Fits Subscriptions Budget' : '🔴 Exceeds Subscriptions Budget'}</span>
+            <span className="text-[10px] text-white/50 font-normal mt-0.5">
+              Total active cost: ₹{activeCost.toLocaleString()}/mo vs Limit: ₹{subLimit.toLocaleString()}/mo
+            </span>
+          </div>
+          {!fitsBudget && (
+            <span className="text-[10px] font-bold bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30">
+              Over by ₹{(activeCost - subLimit).toLocaleString()}
+            </span>
           )}
         </div>
-      </div>
 
-      {/* Input Bar */}
-      <form onSubmit={handleFormSubmit} className="flex gap-2 border-t border-white/5 pt-3.5 mt-3">
-        <input
-          type="text"
-          placeholder="Ask AI how to save money..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 px-3.5 py-2.5 rounded-xl text-xs bg-white/[0.03] text-white border border-white/10 focus:border-neon-green focus:ring-1 focus:ring-neon-green outline-none"
-        />
-        <button
-          type="submit"
-          disabled={isAiLoading || !query.trim()}
-          className="px-4 py-2.5 bg-neon-green text-[#121212] hover:bg-neon-green/90 rounded-xl font-hanken font-bold text-xs uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-        >
-          Ask
-        </button>
-      </form>
+        {/* List of Subscriptions */}
+        <div className="flex flex-col gap-2 pr-1">
+          {subscriptions.map(sub => (
+            <div 
+              key={sub.id} 
+              className={`flex items-center justify-between p-2.5 rounded-xl border transition-colors ${
+                sub.isActive 
+                  ? 'bg-white/[0.03] border-white/10' 
+                  : 'bg-white/[0.01] border-white/5 opacity-55'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={sub.isActive}
+                  onChange={() => toggleSubscription(sub.id)}
+                  className="accent-neon-green w-3.5 h-3.5 rounded cursor-pointer"
+                />
+                <div className="flex flex-col text-left">
+                  <span className={`text-xs font-bold ${sub.isActive ? 'text-white' : 'text-white/40 line-through'}`}>{sub.name}</span>
+                  <span className="text-[9px] text-white/40 font-mono">₹{sub.cost}/mo</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => deleteSubscription(sub.id)}
+                className="w-6 h-6 rounded bg-white/5 hover:bg-red-500/10 flex items-center justify-center text-white/40 hover:text-red-400 transition-colors cursor-pointer border border-white/5"
+                title="Delete"
+              >
+                <span className="material-symbols-outlined text-[12px] font-bold">delete</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </Card>
   );
 };
@@ -737,9 +709,9 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
           </div>
         </div>
 
-        {/* Col 2: Save-Smarter AI Assistant (Width increased to lg:col-span-5) */}
+        {/* Col 2: Study & Tech Subscriptions Tracker */}
         <div className="hidden lg:flex lg:col-span-5 flex-col gap-4">
-          <AIAssistant />
+          <SubscriptionsTracker budgets={budgets} />
         </div>
 
         {/* Col 3: Dorm Leaderboard Card (Dark aspect-[3/4] size) */}
@@ -820,8 +792,8 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
             </Button>
           </Card>
 
-          {/* Mobile AI Assistant Card */}
-          <AIAssistant />
+          {/* Mobile Subscriptions Tracker Card */}
+          <SubscriptionsTracker budgets={budgets} />
         </div>
 
       </div>
