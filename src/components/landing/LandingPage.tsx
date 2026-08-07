@@ -6,6 +6,29 @@ interface LandingPageProps {
   onAuthTrigger: (mode: 'signin' | 'signup' | 'demo') => void;
 }
 
+const animContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05
+    }
+  }
+};
+
+const animItemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      ease: [0.16, 1, 0.3, 1] as const
+    }
+  }
+};
+
 // Predefined Savings Goals for Section 12
 const SAVINGS_GOALS_DATA = [
   { id: 'laptop', name: 'MacBook Pro M4', target: 120000, current: 78000, progress: 65, duration: '3 Months', icon: 'laptop_mac' },
@@ -49,6 +72,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Lenis Smooth Scroll Initialization
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.5,
+    });
+
+    let rafId: number;
+    function raf(time: number) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+
+    rafId = requestAnimationFrame(raf);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
   }, []);
 
   // Section 6: Live Showcase tabs
@@ -95,7 +144,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
   };
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessages.length > 1) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [chatMessages, isTyping]);
 
   // Section 12: Savings Goal carousel selected item
@@ -182,25 +233,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
       <section className="relative pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 min-h-[90vh] items-center bg-grid-pattern">
         
         {/* Left Side Content */}
-        <div className="lg:col-span-6 flex flex-col text-left justify-center gap-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 self-start">
+        <motion.div 
+          variants={animContainerVariants}
+          initial="hidden"
+          animate="visible"
+          className="lg:col-span-6 flex flex-col text-left justify-center gap-6 relative z-10"
+        >
+          <motion.div variants={animItemVariants} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 self-start">
             <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
             <span className="font-hanken text-[10px] font-bold uppercase tracking-wider text-black/65">
               AI Powered Student Finance Dashboard
             </span>
-          </div>
+          </motion.div>
 
-          <h1 className="font-hanken text-5xl sm:text-7xl font-extrabold tracking-tight text-black leading-[1.05]">
+          <motion.h1 variants={animItemVariants} className="font-hanken text-5xl sm:text-7xl font-extrabold tracking-tight text-black leading-[1.05]">
             Money Management <br />
             Built <br />
             For <span className="text-[#00aa3b] underline decoration-neon-green decoration-wavy decoration-2 underline-offset-8">Students</span>.
-          </h1>
+          </motion.h1>
 
-          <p className="font-sans text-base text-black/60 max-w-lg leading-relaxed mt-2">
+          <motion.p variants={animItemVariants} className="font-sans text-base text-black/60 max-w-lg leading-relaxed mt-2">
             Track expenses, plan budgets, save smarter, scan receipts, and receive AI-powered financial insights, all inside one beautiful dashboard.
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-4 mt-2">
+          <motion.div variants={animItemVariants} className="flex flex-col sm:flex-row gap-4 mt-2">
             <button 
               onClick={() => onAuthTrigger('signup')}
               className="bg-[#121212] text-white hover:bg-black px-8 py-4 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-lg cursor-pointer hover:scale-103"
@@ -213,10 +269,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
             >
               Watch Demo
             </a>
-          </div>
+          </motion.div>
 
           {/* Trust Indicators */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-8 border-t border-gray-150 pt-6">
+          <motion.div variants={animItemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-8 border-t border-gray-150 pt-6">
             <div className="flex items-center gap-2.5">
               <span className="material-symbols-outlined text-xl text-[#00aa3b]">done_all</span>
               <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">10K+ Expenses</span>
@@ -233,8 +289,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
               <span className="material-symbols-outlined text-xl text-[#00aa3b]">verified_user</span>
               <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">Secure AES</span>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Right Side Floating Mobile Graphic */}
         <div className="lg:col-span-6 relative flex justify-center items-center h-[540px] w-full">
@@ -272,7 +328,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
             </div>
           </div>
 
-        </div>
+        </motion.div>
       </section>
 
       {/* ──────────────────────────────
@@ -322,16 +378,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
           SECTION 4: THE PROBLEM
           ────────────────────────────── */}
       <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-2xl mx-auto mb-16"
+        >
           <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 font-hanken">The Challenge</span>
           <h2 className="font-hanken text-4xl md:text-5xl font-black text-black tracking-tight mt-3">
             Managing Money<br />Shouldn't Feel This Hard.
           </h2>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div 
+          variants={animContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
           {/* Card 1: Overspending */}
-          <div className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
+          <motion.div variants={animItemVariants} className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
             <div className="flex items-center justify-between">
               <span className="material-symbols-outlined text-3xl text-neon-green">credit_card_off</span>
               <span className="text-[9px] uppercase font-bold tracking-wider text-white/35">Problem 01</span>
@@ -347,10 +415,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
               <span>Wallet Exhausted</span>
               <span className="material-symbols-outlined text-sm">trending_down</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 2: No Savings */}
-          <div className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
+          <motion.div variants={animItemVariants} className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
             <div className="flex items-center justify-between">
               <span className="material-symbols-outlined text-3xl text-[#00aa3b]">database_off</span>
               <span className="text-[9px] uppercase font-bold tracking-wider text-white/35">Problem 02</span>
@@ -366,10 +434,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
               <span>Broken Piggy Bank</span>
               <span className="material-symbols-outlined text-sm">hourglass_empty</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 3: Forgotten Subscriptions */}
-          <div className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
+          <motion.div variants={animItemVariants} className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
             <div className="flex items-center justify-between">
               <span className="material-symbols-outlined text-3xl text-neon-green">autorenew</span>
               <span className="text-[9px] uppercase font-bold tracking-wider text-white/35">Problem 03</span>
@@ -385,10 +453,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
               <span className="bg-white/5 px-2 py-1 rounded">Spotify</span>
               <span className="bg-white/5 px-2 py-1 rounded">GPT Plus</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Card 4: No Financial Awareness */}
-          <div className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
+          <motion.div variants={animItemVariants} className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
             <div className="flex items-center justify-between">
               <span className="material-symbols-outlined text-3xl text-[#00aa3b]">donut_large</span>
               <span className="text-[9px] uppercase font-bold tracking-wider text-white/35">Problem 04</span>
@@ -404,14 +472,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
               <span>Confusing Spaghetti Charts</span>
               <span className="material-symbols-outlined text-sm">query_stats</span>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* ──────────────────────────────
           SECTION 5: WHY FINBUDDY
           ────────────────────────────── */}
-      <section className="px-6 md:px-12 py-12 max-w-7xl mx-auto">
+      <section id="features" className="px-6 md:px-12 py-12 max-w-7xl mx-auto">
         <div className="bg-[#0B0B0C] text-white rounded-[40px] p-8 md:p-16 relative overflow-hidden border border-white/15">
           {/* Subtle Ambient light */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-neon-green/5 rounded-full blur-[100px] pointer-events-none"></div>
@@ -602,21 +670,61 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
                   <span className="font-hanken font-extrabold text-sm uppercase tracking-tight text-white">FinBuddy</span>
                 </div>
                 <div className="flex flex-col gap-2.5 text-xs text-white/50">
-                  <div className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer ${showcaseTab === 'overview' ? 'bg-white/5 text-white font-bold' : ''}`} onClick={() => setShowcaseTab('overview')}>
-                    <span className="material-symbols-outlined text-sm">dashboard</span>
-                    <span>Overview</span>
+                  <div 
+                    className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer relative" 
+                    onClick={() => setShowcaseTab('overview')}
+                  >
+                    {showcaseTab === 'overview' && (
+                      <motion.div 
+                        layoutId="showcaseTabActive" 
+                        className="absolute inset-0 bg-white/5 rounded-xl border border-white/10 z-0" 
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="material-symbols-outlined text-sm relative z-10">dashboard</span>
+                    <span className={`relative z-10 transition-colors duration-300 ${showcaseTab === 'overview' ? 'text-white font-bold' : ''}`}>Overview</span>
                   </div>
-                  <div className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer ${showcaseTab === 'analytics' ? 'bg-white/5 text-white font-bold' : ''}`} onClick={() => setShowcaseTab('analytics')}>
-                    <span className="material-symbols-outlined text-sm">query_stats</span>
-                    <span>Analytics</span>
+                  <div 
+                    className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer relative" 
+                    onClick={() => setShowcaseTab('analytics')}
+                  >
+                    {showcaseTab === 'analytics' && (
+                      <motion.div 
+                        layoutId="showcaseTabActive" 
+                        className="absolute inset-0 bg-white/5 rounded-xl border border-white/10 z-0" 
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="material-symbols-outlined text-sm relative z-10">query_stats</span>
+                    <span className={`relative z-10 transition-colors duration-300 ${showcaseTab === 'analytics' ? 'text-white font-bold' : ''}`}>Analytics</span>
                   </div>
-                  <div className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer ${showcaseTab === 'goals' ? 'bg-white/5 text-white font-bold' : ''}`} onClick={() => setShowcaseTab('goals')}>
-                    <span className="material-symbols-outlined text-sm">track_changes</span>
-                    <span>Goals</span>
+                  <div 
+                    className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer relative" 
+                    onClick={() => setShowcaseTab('goals')}
+                  >
+                    {showcaseTab === 'goals' && (
+                      <motion.div 
+                        layoutId="showcaseTabActive" 
+                        className="absolute inset-0 bg-white/5 rounded-xl border border-white/10 z-0" 
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="material-symbols-outlined text-sm relative z-10">track_changes</span>
+                    <span className={`relative z-10 transition-colors duration-300 ${showcaseTab === 'goals' ? 'text-white font-bold' : ''}`}>Goals</span>
                   </div>
-                  <div className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer ${showcaseTab === 'subscriptions' ? 'bg-white/5 text-white font-bold' : ''}`} onClick={() => setShowcaseTab('subscriptions')}>
-                    <span className="material-symbols-outlined text-sm">event_repeat</span>
-                    <span>Subscriptions</span>
+                  <div 
+                    className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer relative" 
+                    onClick={() => setShowcaseTab('subscriptions')}
+                  >
+                    {showcaseTab === 'subscriptions' && (
+                      <motion.div 
+                        layoutId="showcaseTabActive" 
+                        className="absolute inset-0 bg-white/5 rounded-xl border border-white/10 z-0" 
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="material-symbols-outlined text-sm relative z-10">event_repeat</span>
+                    <span className={`relative z-10 transition-colors duration-300 ${showcaseTab === 'subscriptions' ? 'text-white font-bold' : ''}`}>Subscriptions</span>
                   </div>
                 </div>
               </div>
@@ -626,10 +734,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={showcaseTab}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
                     className="w-full flex-1 flex flex-col justify-between"
                   >
                     {/* Showcase TAB 1: OVERVIEW */}
@@ -1406,6 +1514,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
       </section>
 
       {/* ──────────────────────────────
+          SECTION 15: FINAL CTA
+          ────────────────────────────── */}
+      <section id="pricing" className="px-6 md:px-12 py-12 max-w-7xl mx-auto text-center">
+        <div className="bg-[#0B0B0C] text-white rounded-[40px] p-12 md:p-24 border border-white/15 relative overflow-hidden">
+          
+          {/* Ambient light pulse */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neon-green/5 via-transparent to-transparent pointer-events-none animate-pulse-glow"></div>
+
+          <span className="text-[10px] uppercase font-bold tracking-widest text-neon-green font-hanken relative z-10">Start Tracking Today</span>
+          <h2 className="font-hanken text-4xl sm:text-6xl font-black tracking-tight text-white mt-4 mb-6 relative z-10 max-w-2xl mx-auto leading-tight">
+            Ready To Build Better Money Habits?
+          </h2>
+          <p className="text-sm text-white/55 font-sans leading-relaxed max-w-md mx-auto mb-10 relative z-10">
+            Join thousands of college students saving smarter, splitting room bills live, and tracking budgets. Free forever, setup takes 10 seconds.
+          </p>
+
+          <button
+            onClick={() => onAuthTrigger('signup')}
+            className="bg-neon-green text-black font-hanken font-black text-sm uppercase tracking-wider px-10 py-5 rounded-full relative z-10 hover:shadow-[0_0_30px_rgba(15,238,101,0.65)] hover:scale-103 transition-all cursor-pointer"
+          >
+            Start Free Now
+          </button>
+        </div>
+      </section>
+
+      {/* ──────────────────────────────
           SECTION 14: FAQ
           ────────────────────────────── */}
       <section id="faq" className="py-24 px-6 md:px-12 max-w-4xl mx-auto text-center">
@@ -1445,32 +1579,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
               </div>
             );
           })}
-        </div>
-      </section>
-
-      {/* ──────────────────────────────
-          SECTION 15: FINAL CTA
-          ────────────────────────────── */}
-      <section id="pricing" className="px-6 md:px-12 py-12 max-w-7xl mx-auto text-center">
-        <div className="bg-[#0B0B0C] text-white rounded-[40px] p-12 md:p-24 border border-white/15 relative overflow-hidden">
-          
-          {/* Ambient light pulse */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neon-green/5 via-transparent to-transparent pointer-events-none animate-pulse-glow"></div>
-
-          <span className="text-[10px] uppercase font-bold tracking-widest text-neon-green font-hanken relative z-10">Start Tracking Today</span>
-          <h2 className="font-hanken text-4xl sm:text-6xl font-black tracking-tight text-white mt-4 mb-6 relative z-10 max-w-2xl mx-auto leading-tight">
-            Ready To Build Better Money Habits?
-          </h2>
-          <p className="text-sm text-white/55 font-sans leading-relaxed max-w-md mx-auto mb-10 relative z-10">
-            Join thousands of college students saving smarter, splitting room bills live, and tracking budgets. Free forever, setup takes 10 seconds.
-          </p>
-
-          <button
-            onClick={() => onAuthTrigger('signup')}
-            className="bg-neon-green text-black font-hanken font-black text-sm uppercase tracking-wider px-10 py-5 rounded-full relative z-10 hover:shadow-[0_0_30px_rgba(15,238,101,0.65)] hover:scale-103 transition-all cursor-pointer"
-          >
-            Start Free Now
-          </button>
         </div>
       </section>
 
