@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import heroMobileImg from '../../assets/images/hero_mobile.png';
+import { HeroSection } from './HeroSection';
 
 interface LandingPageProps {
   onAuthTrigger: (mode: 'signin' | 'signup' | 'demo') => void;
@@ -41,6 +41,14 @@ const FAQ_DATA = [
 ];
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
+  // ── CRITICAL: prevent browser scroll restoration from auto-scrolling on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual';
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, []);
+
   // Sticky Navbar blur on scroll state
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -94,8 +102,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
     }, 800);
   };
 
+  // Only auto-scroll chat when the user has SENT a message (length > 1 = beyond initial AI greeting)
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessages.length > 1) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [chatMessages, isTyping]);
 
   // Section 12: Savings Goal carousel selected item
@@ -130,45 +141,79 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
   }, []);
 
   return (
-    <div className="bg-[#fbf9f8] text-[#1b1c1c] w-full min-h-screen relative overflow-x-hidden selection:bg-neon-green selection:text-black">
+    <div className="bg-white text-[#1b1c1c] w-full min-h-screen relative overflow-x-hidden selection:bg-neon-green selection:text-black">
       
       {/* ──────────────────────────────
           SECTION 1: NAVIGATION
           ────────────────────────────── */}
-      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-[#fbf9f8]/85 backdrop-blur-md border-b border-gray-150 py-3 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.05)]' 
-          : 'bg-transparent py-5'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
-          {/* Logo on Left */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
-            <span className="font-hanken font-extrabold text-lg text-black uppercase tracking-tight">
-              Fin<span className="text-[#00aa3b]">Buddy</span>
+      {/* ── GLASSMORPHISM NAVBAR ──────────────────────────────── */}
+      <nav
+        style={{
+          position:   'fixed',
+          top:        scrolled ? '8px' : '16px',
+          left:       '16px',
+          right:      '16px',
+          zIndex:     100,
+          transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
+          borderRadius: '18px',
+          background:   scrolled
+            ? 'rgba(10,10,10,0.82)'
+            : 'rgba(10,10,10,0.55)',
+          backdropFilter:       'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border:      '1px solid rgba(255,255,255,0.08)',
+          boxShadow:   scrolled
+            ? '0 8px 40px rgba(0,0,0,0.35)'
+            : '0 4px 20px rgba(0,0,0,0.2)',
+          padding:     scrolled ? '10px 24px' : '14px 24px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '1280px', margin: '0 auto' }}>
+          {/* Logo */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <img src="/logo.png" alt="FinBuddy" style={{ width: '30px', height: '30px', objectFit: 'contain', borderRadius: '8px' }} />
+            <span className="font-hanken" style={{ fontWeight: 800, fontSize: '15px', color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>
+              Fin<span style={{ color: '#0FEE65' }}>Buddy</span>
             </span>
           </div>
 
-          {/* Navigation Centered */}
-          <div className="hidden md:flex items-center gap-8 text-xs font-hanken font-bold uppercase tracking-wider text-black/60">
-            <a href="#features" className="hover:text-black transition-colors">Features</a>
-            <a href="#showcase" className="hover:text-black transition-colors">Dashboard</a>
-            <a href="#coach" className="hover:text-black transition-colors">AI Coach</a>
-            <a href="#pricing" className="hover:text-black transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-black transition-colors">FAQ</a>
+          {/* Centre nav links — desktop only */}
+          <div className="hidden md:flex" style={{ gap: '2rem' }}>
+            {[['Features','#features'],['Dashboard','#showcase'],['AI Coach','#coach'],['Pricing','#pricing'],['FAQ','#faq']].map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                onClick={e => { e.preventDefault(); document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' }); }}
+                className="font-hanken"
+                style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'color 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')}
+              >
+                {label}
+              </a>
+            ))}
           </div>
 
-          {/* Right Side Buttons */}
-          <div className="flex items-center gap-4">
-            <button 
+          {/* Right CTAs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
               onClick={() => onAuthTrigger('signin')}
-              className="text-xs font-hanken font-bold uppercase tracking-wider text-black hover:text-[#00aa3b] transition-colors px-4 py-2 cursor-pointer"
+              className="font-hanken"
+              style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
             >
-              Login
+              Log in
             </button>
-            <button 
+            <button
               onClick={() => onAuthTrigger('signup')}
-              className="bg-neon-green text-black font-hanken font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full hover:shadow-[0_0_20px_rgba(15,238,101,0.5)] transition-all duration-300 cursor-pointer hover:scale-102"
+              className="font-hanken"
+              style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#000', background: '#0FEE65', border: 'none', cursor: 'pointer', padding: '10px 20px', borderRadius: '9999px', boxShadow: '0 0 20px rgba(15,238,101,0.3)', transition: 'all 0.2s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(255,255,255,0.2)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0FEE65'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(15,238,101,0.3)'; }}
             >
               Get Started
             </button>
@@ -177,103 +222,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
       </nav>
 
       {/* ──────────────────────────────
-          SECTION 2: HERO
+          SECTION 2: HERO (Scroll-Scrubbed Animation)
           ────────────────────────────── */}
-      <section className="relative pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 min-h-[90vh] items-center bg-grid-pattern">
-        
-        {/* Left Side Content */}
-        <div className="lg:col-span-6 flex flex-col text-left justify-center gap-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 self-start">
-            <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
-            <span className="font-hanken text-[10px] font-bold uppercase tracking-wider text-black/65">
-              AI Powered Student Finance Dashboard
-            </span>
-          </div>
-
-          <h1 className="font-hanken text-5xl sm:text-7xl font-extrabold tracking-tight text-black leading-[1.05]">
-            Money Management <br />
-            Built <br />
-            For <span className="text-[#00aa3b] underline decoration-neon-green decoration-wavy decoration-2 underline-offset-8">Students</span>.
-          </h1>
-
-          <p className="font-sans text-base text-black/60 max-w-lg leading-relaxed mt-2">
-            Track expenses, plan budgets, save smarter, scan receipts, and receive AI-powered financial insights, all inside one beautiful dashboard.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 mt-2">
-            <button 
-              onClick={() => onAuthTrigger('signup')}
-              className="bg-[#121212] text-white hover:bg-black px-8 py-4 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-lg cursor-pointer hover:scale-103"
-            >
-              Get Started Free
-            </button>
-            <a 
-              href="#showcase"
-              className="inline-flex items-center justify-center bg-white border border-gray-200 text-black hover:bg-gray-50 px-8 py-4 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              Watch Demo
-            </a>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-8 border-t border-gray-150 pt-6">
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">done_all</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">10K+ Expenses</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">bolt</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">AI Insights</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">celebration</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">Free Forever</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">verified_user</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">Secure AES</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side Floating Mobile Graphic */}
-        <div className="lg:col-span-6 relative flex justify-center items-center h-[540px] w-full">
-          {/* Large Hero Mobile Dashboard Graphic */}
-          <img 
-            src={heroMobileImg} 
-            alt="FinBuddy Mobile Dashboard Mockup" 
-            className="relative z-10 w-auto h-880px] max-h-[580px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.5)] transform rotate-2 hover:rotate-0 transition-all duration-500 hover:scale-[1.03]" 
-          />
-
-          {/* Floating Cards (Around the mobile graphic to preserve high-fidelity visual context) */}
-          <div className="absolute top-12 -left-8 bg-[#0B0B0C] border border-white/10 text-white py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 z-20 animate-float-slow">
-            <span className="material-symbols-outlined text-sm text-neon-green">savings</span>
-            <div className="text-left">
-              <p className="text-[8px] text-white/40 font-bold uppercase tracking-wider">Saved This Week</p>
-              <h4 className="text-xs font-bold text-white leading-tight">Saved ₹2,300</h4>
-            </div>
-          </div>
-
-          <div className="absolute top-1/2 -right-8 bg-[#0B0B0C] border border-white/10 text-white py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 z-20 animate-float-medium">
-            <span className="material-symbols-outlined text-sm text-neon-green">laptop_mac</span>
-            <div className="text-left">
-              <p className="text-[8px] text-white/40 font-bold uppercase tracking-wider">College Goal</p>
-              <h4 className="text-xs font-bold text-white leading-tight">Laptop 65%</h4>
-            </div>
-          </div>
-
-          <div className="absolute -bottom-8 left-12 bg-[#0B0B0C] border border-neon-green/30 text-white py-3 px-5 rounded-2xl shadow-2xl flex items-start gap-2.5 z-20 max-w-[280px] animate-float-slow">
-            <span className="material-symbols-outlined text-base text-neon-green mt-0.5">lightbulb</span>
-            <div className="text-left">
-              <p className="text-[8px] text-neon-green font-bold uppercase tracking-wider">AI Insight</p>
-              <p className="text-[10px] text-white/80 leading-normal font-sans mt-0.5">
-                "Skipping Friday delivery puts you 12% closer to yourElectric Scooter goal."
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </section>
+      <HeroSection onAuthTrigger={onAuthTrigger} />
 
       {/* ──────────────────────────────
           SECTION 3: SOCIAL PROOF
