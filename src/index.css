@@ -251,3 +251,23 @@ html.lenis, html.lenis body {
   pointer-events: none;
 }
 
+@keyframes scroll-dash {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(300%); }
+}
+
+.animate-scroll-dash {
+  animation: scroll-dash 1.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+/* prefers-reduced-motion: disable scroll animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll-dash,
+  .animate-float-slow,
+  .animate-float-medium,
+  .animate-float-fast,
+  .animate-pulse-glow {
+    animation: none !important;
+  }
+}
+

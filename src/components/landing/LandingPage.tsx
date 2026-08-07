@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import heroMobileImg from '../../assets/images/hero_mobile.png';
+import { HeroSection } from './HeroSection';
 
 interface LandingPageProps {
   onAuthTrigger: (mode: 'signin' | 'signup' | 'demo') => void;
@@ -64,6 +64,14 @@ const FAQ_DATA = [
 ];
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
+  // ── CRITICAL: prevent browser scroll restoration from auto-scrolling on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual';
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, []);
+
   // Sticky Navbar blur on scroll state
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -143,6 +151,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
     }, 800);
   };
 
+  // Only auto-scroll chat when the user has SENT a message (length > 1 = beyond initial AI greeting)
   useEffect(() => {
     if (chatMessages.length > 1) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -181,45 +190,79 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
   }, []);
 
   return (
-    <div className="bg-[#fbf9f8] text-[#1b1c1c] w-full min-h-screen relative overflow-x-hidden selection:bg-neon-green selection:text-black">
+    <div className="bg-white text-[#1b1c1c] w-full min-h-screen relative overflow-x-hidden selection:bg-neon-green selection:text-black">
       
       {/* ──────────────────────────────
           SECTION 1: NAVIGATION
           ────────────────────────────── */}
-      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-[#fbf9f8]/85 backdrop-blur-md border-b border-gray-150 py-3 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.05)]' 
-          : 'bg-transparent py-5'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
-          {/* Logo on Left */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
-            <span className="font-hanken font-extrabold text-lg text-black uppercase tracking-tight">
-              Fin<span className="text-[#00aa3b]">Buddy</span>
+      {/* ── GLASSMORPHISM NAVBAR ──────────────────────────────── */}
+      <nav
+        style={{
+          position:   'fixed',
+          top:        scrolled ? '8px' : '16px',
+          left:       '16px',
+          right:      '16px',
+          zIndex:     100,
+          transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
+          borderRadius: '18px',
+          background:   scrolled
+            ? 'rgba(10,10,10,0.82)'
+            : 'rgba(10,10,10,0.55)',
+          backdropFilter:       'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border:      '1px solid rgba(255,255,255,0.08)',
+          boxShadow:   scrolled
+            ? '0 8px 40px rgba(0,0,0,0.35)'
+            : '0 4px 20px rgba(0,0,0,0.2)',
+          padding:     scrolled ? '10px 24px' : '14px 24px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '1280px', margin: '0 auto' }}>
+          {/* Logo */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <img src="/logo.png" alt="FinBuddy" style={{ width: '30px', height: '30px', objectFit: 'contain', borderRadius: '8px' }} />
+            <span className="font-hanken" style={{ fontWeight: 800, fontSize: '15px', color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>
+              Fin<span style={{ color: '#0FEE65' }}>Buddy</span>
             </span>
           </div>
 
-          {/* Navigation Centered */}
-          <div className="hidden md:flex items-center gap-8 text-xs font-hanken font-bold uppercase tracking-wider text-black/60">
-            <a href="#features" className="hover:text-black transition-colors">Features</a>
-            <a href="#showcase" className="hover:text-black transition-colors">Dashboard</a>
-            <a href="#coach" className="hover:text-black transition-colors">AI Coach</a>
-            <a href="#pricing" className="hover:text-black transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-black transition-colors">FAQ</a>
+          {/* Centre nav links — desktop only */}
+          <div className="hidden md:flex" style={{ gap: '2rem' }}>
+            {[['Features','#features'],['Dashboard','#showcase'],['AI Coach','#coach'],['Pricing','#pricing'],['FAQ','#faq']].map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                onClick={e => { e.preventDefault(); document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' }); }}
+                className="font-hanken"
+                style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'color 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')}
+              >
+                {label}
+              </a>
+            ))}
           </div>
 
-          {/* Right Side Buttons */}
-          <div className="flex items-center gap-4">
-            <button 
+          {/* Right CTAs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
               onClick={() => onAuthTrigger('signin')}
-              className="text-xs font-hanken font-bold uppercase tracking-wider text-black hover:text-[#00aa3b] transition-colors px-4 py-2 cursor-pointer"
+              className="font-hanken"
+              style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
             >
-              Login
+              Log in
             </button>
-            <button 
+            <button
               onClick={() => onAuthTrigger('signup')}
-              className="bg-neon-green text-black font-hanken font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full hover:shadow-[0_0_20px_rgba(15,238,101,0.5)] transition-all duration-300 cursor-pointer hover:scale-102"
+              className="font-hanken"
+              style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#000', background: '#0FEE65', border: 'none', cursor: 'pointer', padding: '10px 20px', borderRadius: '9999px', boxShadow: '0 0 20px rgba(15,238,101,0.3)', transition: 'all 0.2s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(255,255,255,0.2)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0FEE65'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(15,238,101,0.3)'; }}
             >
               Get Started
             </button>
@@ -228,7 +271,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
       </nav>
 
       {/* ──────────────────────────────
-          SECTION 2: HERO
+          SECTION 2: HERO (Scroll-Scrubbed Animation)
           ────────────────────────────── */}
       <section className="relative pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 min-h-[90vh] items-center bg-grid-pattern">
         
