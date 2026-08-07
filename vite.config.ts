@@ -28,6 +28,9 @@ export default defineConfig({
             if (id.includes('framer-motion')) {
               return 'vendor-framer';
             }
+            if (id.includes('jspdf')) {
+              return 'vendor-jspdf';
+            }
             return 'vendor-core';
           }
         }

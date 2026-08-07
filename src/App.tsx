@@ -13,6 +13,7 @@ import { Dock } from './components/ui/Dock';
 import { Sidebar } from './components/ui/Sidebar';
 import { Card } from './components/ui/Card';
 import { GPayModal } from './components/dashboard/GPayModal';
+import { downloadStatementPDF } from './utils/pdfGenerator';
 
 // Dashboard Components
 import { SpendingCharts } from './components/dashboard/SpendingCharts';
@@ -76,6 +77,7 @@ function App() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [isTabLoading, setIsTabLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const handleTabChange = (tab: string) => {
     if (tab === activeTab) return;
@@ -304,42 +306,109 @@ function App() {
             )}
 
             {/* 6. PROFILE TAB */}
-            {activeTab === 'profile' && (
-              <Card variant="vessel" className="p-6 border border-white/[0.08] rounded-[24px] text-left flex flex-col gap-6">
-                <div className="flex items-center gap-4 border-b border-white/5 pb-4">
-                  <img 
-                    src={user.photoURL || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDsjXR_VSCRGNFnub_Ti3YbTzEUKHVngE2ltAYacbKPmr8vceg4ltYckIztAtwOa7U4tNh01nACESnzWeVsp4G8QUUM8FSA4w5fokkGyS48KZlrDWRutWw6fIkeBnT72XUJHX9EZ6prfFGY7GvaomnU2-3xouz5jA0AAkjsoPFtbrhzBzfpT9VxHsTDEabevPfKLKCzpU04VnwEzFMldcs43237fTBqCGMGwHIYaMU84v7rVwviryh9'} 
-                    alt={user.displayName || 'Profile'} 
-                    className="w-14 h-14 rounded-full border border-white/10" 
-                  />
-                  <div>
-                    <h3 className="text-lg font-bold text-white leading-tight">{user.displayName || 'Guest User'}</h3>
-                    <p className="text-xs text-white/50">{user.email}</p>
+            {activeTab === 'profile' && (() => {
+              const totalIncome = transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+              const totalExpense = transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+              const savingsRate = totalIncome > 0 
+                ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) 
+                : 0;
+
+              return (
+                <div className="flex flex-col gap-6 w-full text-left">
+                  
+                  {/* Detailed Student Profile Card */}
+                  <Card variant="vessel" className="p-6 border border-white/[0.08] rounded-[28px] relative overflow-hidden flex flex-col gap-6">
+                    {/* Glow Accent */}
+                    <div className="absolute top-0 right-0 w-36 h-36 bg-neon-green/5 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-5 border-b border-white/5">
+                      <img 
+                        src={user.photoURL || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDsjXR_VSCRGNFnub_Ti3YbTzEUKHVngE2ltAYacbKPmr8vceg4ltYckIztAtwOa7U4tNh01nACESnzWeVsp4G8QUUM8FSA4w5fokkGyS48KZlrDWRutWw6fIkeBnT72XUJHX9EZ6prfFGY7GvaomnU2-3xouz5jA0AAkjsoPFtbrhzBzfpT9VxHsTDEabevPfKLKCzpU04VnwEzFMldcs43237fTBqCGMGwHIYaMU84v7rVwviryh9'} 
+                        alt={user.displayName || 'Profile'} 
+                        className="w-16 h-16 rounded-full border border-white/10 shadow-lg object-cover" 
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-bold text-white leading-tight">{user.displayName || 'Guest User'}</h3>
+                          <span className="text-[9px] uppercase font-bold bg-neon-green/10 text-neon-green border border-neon-green/20 px-2 py-0.5 rounded-full">
+                            Student Account
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/50 mt-1">{user.email}</p>
+                      </div>
+                    </div>
+
+                    {/* Detailed User Information Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                        <span className="text-white/40 uppercase font-bold tracking-wider text-[8px]">Student Name</span>
+                        <p className="text-white font-medium mt-0.5 text-sm">{user.displayName || 'Guest User'}</p>
+                      </div>
+                      <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                        <span className="text-white/40 uppercase font-bold tracking-wider text-[8px]">Registered Email</span>
+                        <p className="text-white font-medium mt-0.5 text-sm">{user.email || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Financial Overview Metrics Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-[#0B0B0C] border border-white/[0.06] rounded-[20px] p-4 text-left">
+                      <span className="text-white/35 text-[8px] uppercase font-bold tracking-wider block">Wallet Balance</span>
+                      <span className="text-white font-hanken font-bold text-base md:text-lg block mt-1">₹{balance.toLocaleString()}</span>
+                    </div>
+                    <div className="bg-[#0B0B0C] border border-white/[0.06] rounded-[20px] p-4 text-left">
+                      <span className="text-white/35 text-[8px] uppercase font-bold tracking-wider block">Total Incomes</span>
+                      <span className="text-neon-green font-hanken font-bold text-base md:text-lg block mt-1">₹{totalIncome.toLocaleString()}</span>
+                    </div>
+                    <div className="bg-[#0B0B0C] border border-white/[0.06] rounded-[20px] p-4 text-left">
+                      <span className="text-white/35 text-[8px] uppercase font-bold tracking-wider block">Total Spendings</span>
+                      <span className="text-red-400 font-hanken font-bold text-base md:text-lg block mt-1">₹{totalExpense.toLocaleString()}</span>
+                    </div>
+                    <div className="bg-[#0B0B0C] border border-white/[0.06] rounded-[20px] p-4 text-left">
+                      <span className="text-white/35 text-[8px] uppercase font-bold tracking-wider block">Savings Ratio</span>
+                      <span className="text-blue-400 font-hanken font-bold text-base md:text-lg block mt-1">{savingsRate}%</span>
+                    </div>
                   </div>
+
+                  {/* Download Statement PDF Card */}
+                  <Card variant="vessel" className="p-5 border border-white/[0.08] rounded-[24px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-hanken font-bold text-white text-sm">Download Ledger Statement</h4>
+                      <p className="text-[10px] text-white/50 mt-1 leading-normal max-w-md">
+                        Export all local transaction histories, category budget limits, and active savings milestone records into a clean, formatted PDF document.
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        setPdfLoading(true);
+                        await downloadStatementPDF(user, transactions, budgets, goals, balance);
+                        setPdfLoading(false);
+                      }}
+                      disabled={pdfLoading}
+                      className="bg-neon-green text-black hover:bg-neon-green/90 disabled:opacity-50 disabled:cursor-not-allowed neon-glow py-3 px-6 rounded-xl font-bold font-hanken text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all duration-200 active:scale-97 cursor-pointer self-stretch md:self-auto text-center justify-center border-none"
+                    >
+                      <span className={`material-symbols-outlined text-sm font-bold ${pdfLoading ? 'animate-spin' : ''}`}>
+                        {pdfLoading ? 'autorenew' : 'picture_as_pdf'}
+                      </span>
+                      {pdfLoading ? 'Generating...' : 'Download Statement PDF'}
+                    </button>
+                  </Card>
+
+                  {/* Technical Overview Info */}
+                  <div className="text-[9px] text-white/20 flex flex-col sm:flex-row justify-between items-center px-2 py-1 gap-2">
+                    <span>Secure Local Ledger Encryption v1.0.0</span>
+                  </div>
+
                 </div>
-
-                <div className="flex flex-col gap-4 text-xs">
-                  <div>
-                    <h4 className="font-hanken font-bold uppercase tracking-wider text-neon-green mb-1.5">Project Overview</h4>
-                    <p className="text-white/70 leading-relaxed font-sans">
-                      FinBuddy is a Student Finance Dashboard optimized for budgeting, tracking, and peer splitting. Built using React, Tailwind CSS v4, Chart.js, and Firebase Firestore for high-fidelity interactive sync.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-hanken font-bold uppercase tracking-wider text-neon-green mb-1.5">Firestore Connection</h4>
-                    <p className="text-white/70 leading-relaxed font-sans">
-                      Split & Settle sessions are live synced using Firestore collections. Tapping "Split Now" computes debts instantly, pushing balances to joined roomies via listeners.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-white/5 pt-4 flex justify-between items-center text-[10px] text-white/40">
-                    <span>Host ID: {user.uid}</span>
-                    <span>Version 1.0.0 (Hackathon scope)</span>
-                  </div>
-                </div>
-              </Card>
-            )}
+              );
+            })()}
 
               </motion.div>
             )}
