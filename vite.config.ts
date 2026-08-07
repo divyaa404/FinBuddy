@@ -10,5 +10,29 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
+            if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('lottie-web') || id.includes('lottie-react')) {
+              return 'vendor-lottie';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-framer';
+            }
+            return 'vendor-core';
+          }
+        }
+      }
+    }
+  }
 })
 
