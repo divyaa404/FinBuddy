@@ -103,6 +103,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
         uid: 'demo_user_123',
         displayName: 'Demo Evaluator',
         email: 'evaluator@finbuddy.com',
+        phoneNumber: '+91 98765 43210',
         photoURL: null
       } as any;
       setUser(mockUser);
@@ -133,6 +134,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
           uid: `local_user_${Date.now()}`,
           displayName: name,
           email: email,
+          phoneNumber: phone,
           photoURL: null
         } as any;
         setUser(mockUser);
@@ -153,6 +155,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
           uid: `local_user_${Date.now()}`,
           displayName: email.split('@')[0],
           email: email,
+          phoneNumber: '+91 99999 88888',
           photoURL: null
         } as any;
         setUser(mockUser);
