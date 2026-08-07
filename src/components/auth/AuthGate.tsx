@@ -207,18 +207,18 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 md:p-6 bg-[#050505]/80 backdrop-blur-xl"
           >
             <motion.div
-              initial={{ scale: 0.94, y: 15, opacity: 0 }}
+              initial={{ scale: 0.94, y: 16, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.94, y: 15, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="w-full max-w-md"
+              exit={{ scale: 0.94, y: 16, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="w-full max-w-[500px] my-2 sm:my-0"
             >
               <Card 
                 variant="vessel" 
-                className="w-full p-5 md:p-6 rounded-[28px] border border-white/10 shadow-2xl flex flex-col gap-4 text-left relative overflow-y-auto max-h-[92vh] hide-scrollbar"
+                className="w-full p-5 sm:p-6 rounded-[30px] border border-white/10 shadow-[0_24px_90px_rgba(0,0,0,0.45)] flex flex-col gap-4 text-left relative overflow-y-auto max-h-[min(92vh,780px)] hide-scrollbar"
               >
                 
                 {/* Close Modal Button */}
@@ -231,6 +231,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
                 </button>
 
                 {/* Glowing Accent */}
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-neon-green/20 to-transparent pointer-events-none"></div>
                 <div className="absolute -top-16 -right-16 w-32 h-32 bg-neon-green/10 rounded-full blur-2xl pointer-events-none"></div>
 
                 {/* Logo */}
@@ -399,8 +400,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
                     onClick={handleGoogleLogin}
                     className="bg-white text-black hover:bg-white/90 py-2.5 px-3 rounded-xl font-bold font-hanken text-[9px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
                   >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.746-.08-1.32-.176-1.885H12.24z"/>
+                    <svg className="w-3.8 h-3.8" viewBox="0 0 48 48" aria-hidden="true">
+                      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20c10.493 0 19.5-7.583 19.5-20 0-1.341-.138-2.647-.389-3.917z" />
+                      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+                      <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+                      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.001-.001 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.647-.389-3.917z" />
                     </svg>
                     Google
                   </button>
