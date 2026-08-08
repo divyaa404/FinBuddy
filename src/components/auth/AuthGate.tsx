@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../../firebase/config';
-import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import Lottie from 'lottie-react';
 import loadingMainAnim from '../../assets/animations/loading_main.json';
@@ -79,6 +77,25 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     };
   }, []);
 
+  // Sync pathname on mount and on popstate
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const path = window.location.pathname;
+      if (path === '/login' || path === '/signup') {
+        setAuthMode(path === '/login' ? 'signin' : 'signup');
+        setIsAuthModalOpen(true);
+        setError(null);
+      } else {
+        setIsAuthModalOpen(false);
+      }
+    };
+    handleLocationChange();
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, []);
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
@@ -126,7 +143,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
         setError('Please fill in all sign-up fields.');
         return;
       }
-      
+
       // Simulate account registration & log in
       setLoading(true);
       setTimeout(() => {
@@ -147,7 +164,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
         setError('Please fill in email and password.');
         return;
       }
-      
+
       // Simulate sign in
       setLoading(true);
       setTimeout(() => {
@@ -181,257 +198,246 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     return <>{children(null as any)}</>;
   }
 
+  const handleAuthTrigger = (mode: 'signin' | 'signup' | 'demo') => {
+    if (mode === 'demo') {
+      handleDemoLogin();
+    } else {
+      setAuthMode(mode);
+      setIsAuthModalOpen(true);
+      setError(null);
+      window.history.pushState(null, '', mode === 'signin' ? '/login' : '/signup');
+    }
+  };
+
+  const handleCloseAuth = () => {
+    setIsAuthModalOpen(false);
+    window.history.pushState(null, '', '/');
+  };
+
   if (user) {
     return <>{children(user)}</>;
   }
 
+  if (isAuthModalOpen || window.location.pathname === '/login' || window.location.pathname === '/signup') {
+    return (
+      <div className="auth-page min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center py-8 px-4 relative overflow-y-auto">
+        {/* Subtle radial green glow behind content */}
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 50%, rgba(15,238,101,0.06), transparent 50%)',
+          }}
+        />
+
+        {/* Floating SaaS Navigation Dock for Auth Page */}
+        <nav
+          className="fixed top-4 left-1/2 -translate-x-1/2 w-[min(1100px,calc(100%-32px))] h-16 bg-[#121212]/78 backdrop-blur-xl border border-white/10 rounded-[18px] flex items-center justify-between px-6 z-50 shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
+        >
+          {/* Logo */}
+          <div
+            className="flex items-center gap-2 cursor-pointer select-none"
+            onClick={handleCloseAuth}
+          >
+            <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
+            <span className="font-hanken font-bold text-sm uppercase tracking-tight text-white">
+              Fin<span className="text-neon-green">Buddy</span>
+            </span>
+          </div>
+
+          <button
+            onClick={handleCloseAuth}
+            className="font-hanken text-[10px] font-bold uppercase tracking-wider text-white/60 hover:text-white bg-transparent border-none cursor-pointer"
+          >
+            Back to Home
+          </button>
+        </nav>
+
+        {/* Scoped Auth Card */}
+        <div className="auth-card w-full max-w-[620px] bg-[#121212] border border-white/[0.08] rounded-[24px] p-8 md:p-10 shadow-[0_24px_90px_rgba(0,0,0,0.55)] flex flex-col gap-6 relative z-10 mt-4 text-left">
+
+          {/* Subtle top glow line */}
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#0FEE65] to-transparent pointer-events-none" />
+
+          {/* Logo and branding */}
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="FinBuddy Logo" className="w-7 h-7 object-contain rounded-lg" />
+            <span className="font-hanken font-bold text-xs uppercase tracking-tight text-white">
+              Fin<span className="text-neon-green">Buddy</span>
+            </span>
+          </div>
+
+          <div>
+            <h3 className="font-hanken font-black text-2xl text-white">
+              {authMode === 'signin' ? 'Welcome Back' : 'Create Student Account'}
+            </h3>
+            <p className="text-xs text-white/50 font-sans mt-1 leading-normal">
+              {authMode === 'signin'
+                ? 'Access your student dashboard and resume financial tracking'
+                : 'Start tracking, splitting room bills, and planning savings milestones'}
+            </p>
+          </div>
+
+          {/* Mode Selector Toggle */}
+          <div className="flex bg-[#1b1c1c] p-1 rounded-xl border border-white/5">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('signin');
+                setError(null);
+                window.history.pushState(null, '', '/login');
+              }}
+              className={`flex-1 py-2 text-center text-[10px] font-bold rounded-lg uppercase tracking-wider transition-all duration-300 cursor-pointer ${authMode === 'signin'
+                  ? 'bg-[#0B0B0C] text-[#0FEE65] border border-white/5 font-extrabold shadow-sm'
+                  : 'text-white/40 hover:text-white'
+                }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('signup');
+                setError(null);
+                window.history.pushState(null, '', '/signup');
+              }}
+              className={`flex-1 py-2 text-center text-[10px] font-bold rounded-lg uppercase tracking-wider transition-all duration-300 cursor-pointer ${authMode === 'signup'
+                  ? 'bg-[#0B0B0C] text-[#0FEE65] border border-white/5 font-extrabold shadow-sm'
+                  : 'text-white/40 hover:text-white'
+                }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-950/40 border border-red-500/20 text-red-200 rounded-xl text-xs font-semibold leading-relaxed">
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleLocalSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
+              {authMode === 'signup' ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Full Name"
+                      type="text"
+                      placeholder="Enter name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                    <Input
+                      label="Phone Number"
+                      type="tel"
+                      placeholder="+91..."
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <Input
+                      label="Confirm Password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Input
+                    label="Email Address"
+                    type="email"
+                    placeholder="you@college.edu"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+
+                  <Input
+                    label="Password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              variant="secondary"
+              fullWidth
+              className="h-12 text-xs font-bold uppercase tracking-wider mt-2 border border-white/10"
+            >
+              {authMode === 'signin' ? 'Log In' : 'Create Account'}
+            </Button>
+          </form>
+
+          {/* Separator line */}
+          <div className="flex items-center justify-between text-white/20 text-xs my-2">
+            <span className="w-full h-px bg-white/5"></span>
+            <span className="px-4 uppercase font-bold tracking-wider font-hanken text-[9px] flex-shrink-0 text-white/35">or connect via</span>
+            <span className="w-full h-px bg-white/5"></span>
+          </div>
+
+          {/* Social connections */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Google Login */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="flex-1 h-12 bg-white text-black hover:bg-white/90 rounded-[14px] font-bold font-hanken text-[11px] uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-md transition-all active:scale-98 cursor-pointer"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+
+            {/* Quick Demo Login */}
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              className="flex-1 h-12 bg-[rgba(15,238,101,0.10)] border border-[rgba(15,238,101,0.30)] text-[#0FEE65] hover:bg-[rgba(15,238,101,0.20)] rounded-[14px] font-bold font-hanken text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm font-bold">bolt</span>
+              <span>Continue with Demo</span>
+            </button>
+          </div>
+
+          <span className="text-[9px] text-white/30 text-center font-medium font-sans mt-2">
+            * Quick Demo Login provides immediate full feature access for judges.
+          </span>
+
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <LandingPage 
-        onAuthTrigger={(mode) => {
-          if (mode === 'demo') {
-            handleDemoLogin();
-          } else {
-            setAuthMode(mode);
-            setIsAuthModalOpen(true);
-            setError(null);
-          }
-        }} 
-      />
-
-      {/* Modern High-Contrast Authentication Modal */}
-      <AnimatePresence>
-        {isAuthModalOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 md:p-6 bg-[#050505]/80 backdrop-blur-xl"
-          >
-            <motion.div
-              initial={{ scale: 0.94, y: 16, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.94, y: 16, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="w-full max-w-[500px] my-2 sm:my-0"
-            >
-              <Card 
-                variant="vessel" 
-                className="w-full p-5 sm:p-6 rounded-[30px] border border-white/10 shadow-[0_24px_90px_rgba(0,0,0,0.45)] flex flex-col gap-4 text-left relative overflow-y-auto max-h-[min(92vh,780px)] hide-scrollbar"
-              >
-                
-                {/* Close Modal Button */}
-                <button
-                  type="button"
-                  onClick={() => setIsAuthModalOpen(false)}
-                  className="absolute top-4 right-4 text-white/40 hover:text-white cursor-pointer transition-colors p-1"
-                >
-                  <span className="material-symbols-outlined text-lg">close</span>
-                </button>
-
-                {/* Glowing Accent */}
-                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-neon-green/20 to-transparent pointer-events-none"></div>
-                <div className="absolute -top-16 -right-16 w-32 h-32 bg-neon-green/10 rounded-full blur-2xl pointer-events-none"></div>
-
-                {/* Logo */}
-                <div className="flex items-center gap-2">
-                  <img src="/logo.png" alt="FinBuddy Logo" className="w-8 h-8 object-contain rounded-lg" />
-                  <span className="font-hanken font-bold text-sm uppercase tracking-tight text-white">
-                    Fin<span className="text-neon-green">Buddy</span>
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="font-hanken font-black text-lg text-white">
-                    {authMode === 'signin' ? 'Welcome Back' : 'Create Account'}
-                  </h3>
-                  <p className="text-[10px] text-white/50 font-sans mt-0.5 leading-tight">
-                    {authMode === 'signin' 
-                      ? 'Access your college finances dashboard instantly' 
-                      : 'Start tracking, splitting, and saving today'}
-                  </p>
-                </div>
-
-                {/* Toggle Modes */}
-                <div className="flex bg-[#1b1c1c] p-1 rounded-xl border border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode('signin');
-                      setError(null);
-                    }}
-                    className={`flex-1 py-1.5 text-center text-[9px] font-bold rounded-lg uppercase tracking-wider transition-all duration-300 cursor-pointer ${
-                      authMode === 'signin' 
-                        ? 'bg-[#0B0B0C] text-neon-green border border-white/5 font-extrabold shadow-sm' 
-                        : 'text-white/40 hover:text-white'
-                    }`}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode('signup');
-                      setError(null);
-                    }}
-                    className={`flex-1 py-1.5 text-center text-[9px] font-bold rounded-lg uppercase tracking-wider transition-all duration-300 cursor-pointer ${
-                      authMode === 'signup' 
-                        ? 'bg-[#0B0B0C] text-neon-green border border-white/5 font-extrabold shadow-sm' 
-                        : 'text-white/40 hover:text-white'
-                    }`}
-                  >
-                    Sign Up
-                  </button>
-                </div>
-
-                {error && (
-                  <div className="p-2.5 bg-red-950/40 border border-red-500/20 text-red-200 rounded-xl text-[10px] font-semibold leading-relaxed">
-                    {error}
-                  </div>
-                )}
-
-                {/* Form with layout animation */}
-                <form onSubmit={handleLocalSubmit} className="flex flex-col gap-3">
-                  <motion.div
-                    key={authMode}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex flex-col gap-3"
-                  >
-                    {authMode === 'signup' ? (
-                      <>
-                        <div className="grid grid-cols-2 gap-3">
-                          <Input
-                            label="Full Name"
-                            type="text"
-                            placeholder="Enter name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                            className="py-2 text-xs"
-                          />
-                          <Input
-                            label="Phone Number"
-                            type="tel"
-                            placeholder="+91..."
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            required
-                            className="py-2 text-xs"
-                          />
-                        </div>
-
-                        <Input
-                          label="Email Address"
-                          type="email"
-                          placeholder="you@college.edu"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                          className="py-2 text-xs"
-                        />
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <Input
-                            label="Password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="py-2 text-xs"
-                          />
-                          <Input
-                            label="Confirm Password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                            className="py-2 text-xs"
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <Input
-                          label="Email Address"
-                          type="email"
-                          placeholder="you@college.edu"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-
-                        <Input
-                          label="Password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                        />
-                      </>
-                    )}
-                  </motion.div>
-
-                  <Button
-                    type="submit"
-                    variant="secondary"
-                    fullWidth
-                    className="py-2.5 text-[9px] font-bold uppercase tracking-wider mt-1.5 border border-white/10"
-                  >
-                    {authMode === 'signin' ? 'Log In' : 'Create Account'}
-                  </Button>
-                </form>
-
-                <div className="flex items-center justify-between text-white/20 text-xs my-0.5">
-                  <span className="w-full h-px bg-white/5"></span>
-                  <span className="px-3 uppercase font-bold tracking-wider font-hanken text-[8px] flex-shrink-0 text-white/35">or connect via</span>
-                  <span className="w-full h-px bg-white/5"></span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Google Login */}
-                  <button
-                    type="button"
-                    onClick={handleGoogleLogin}
-                    className="bg-white text-black hover:bg-white/90 py-2.5 px-3 rounded-xl font-bold font-hanken text-[9px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    <svg className="w-3.8 h-3.8" viewBox="0 0 48 48" aria-hidden="true">
-                      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20c10.493 0 19.5-7.583 19.5-20 0-1.341-.138-2.647-.389-3.917z" />
-                      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
-                      <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
-                      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.001-.001 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.647-.389-3.917z" />
-                    </svg>
-                    Google
-                  </button>
-
-                  {/* Quick Demo Login */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleDemoLogin();
-                      setIsAuthModalOpen(false);
-                    }}
-                    className="bg-neon-green text-black hover:bg-neon-green/90 neon-glow py-2.5 px-3 rounded-xl font-black font-hanken text-[9px] uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-xs font-bold">bolt</span>
-                    Demo Login
-                  </button>
-                </div>
-
-                <span className="text-[7.5px] text-white/30 text-center font-medium font-sans mt-0.5">
-                  * Judges: Bypass custom forms to launch dashboard instantly.
-                </span>
-
-              </Card>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <LandingPage onAuthTrigger={handleAuthTrigger} />
     </>
   );
 };

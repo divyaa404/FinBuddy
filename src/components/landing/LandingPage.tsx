@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Lenis from 'lenis';
-import heroMobileImg from '../../assets/images/hero_mobile.png';
+import { HeroSection } from './HeroSection';
 
 interface LandingPageProps {
   onAuthTrigger: (mode: 'signin' | 'signup' | 'demo') => void;
@@ -77,24 +77,59 @@ const FAQ_DATA = [
 ];
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+    return false;
+  });
+
   // ── CRITICAL: prevent browser scroll restoration from auto-scrolling on load
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
+    let originalRestoration = 'auto';
+    if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+      originalRestoration = window.history.scrollRestoration;
       window.history.scrollRestoration = 'manual';
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
+
+    return () => {
+      if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+        window.history.scrollRestoration = originalRestoration as ScrollRestoration;
+      }
+    };
   }, []);
 
-  // Sticky Navbar blur on scroll state
-  const [scrolled, setScrolled] = useState(false);
+  // Prefers-reduced-motion media query detector
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const listener = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
   }, []);
+
+  // Scroll-triggered reveal animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -60px 0px' }
+    );
+
+    // Observe all scroll-reveal elements
+    const revealElements = document.querySelectorAll('.scroll-reveal, .scroll-reveal-children');
+    revealElements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
 
   // Lenis Smooth Scroll Initialization
   useEffect(() => {
@@ -207,49 +242,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
     <div className="bg-white text-[#1b1c1c] w-full min-h-screen relative overflow-x-hidden selection:bg-neon-green selection:text-black">
       
       {/* ──────────────────────────────
-          SECTION 1: NAVIGATION
-          ────────────────────────────── */}
-      {/* ── GLASSMORPHISM NAVBAR ──────────────────────────────── */}
+               {/* ── GLASSMORPHISM NAVBAR ──────────────────────────────── */}
       <nav
         style={{
           position:   'fixed',
-          top:        scrolled ? '8px' : '16px',
-          left:       '16px',
-          right:      '16px',
-          zIndex:     100,
-          transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
+          top:        '16px',
+          left:       '50%',
+          transform:  'translateX(-50%)',
+          width:      'min(1100px, calc(100% - 32px))',
+          height:     '64px',
+          zIndex:     1000,
+          transition: 'all 0.3s ease',
           borderRadius: '18px',
-          background:   scrolled
-            ? 'rgba(10,10,10,0.82)'
-            : 'rgba(10,10,10,0.55)',
-          backdropFilter:       'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border:      '1px solid rgba(255,255,255,0.08)',
-          boxShadow:   scrolled
-            ? '0 8px 40px rgba(0,0,0,0.35)'
-            : '0 4px 20px rgba(0,0,0,0.2)',
-          padding:     scrolled ? '10px 24px' : '14px 24px',
+          background:   'rgba(18, 18, 18, 0.78)',
+          backdropFilter:       'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border:      '1px solid rgba(255, 255, 255, 0.10)',
+          boxShadow:   '0 12px 40px rgba(0, 0, 0, 0.12)',
+          display:     'flex',
+          alignItems:  'center',
+          padding:     '0 24px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '1280px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           {/* Logo */}
           <div
             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <img src="/logo.png" alt="FinBuddy" style={{ width: '30px', height: '30px', objectFit: 'contain', borderRadius: '8px' }} />
+            <img src="/logo.png" alt="FinBuddy" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '8px' }} />
             <span className="font-hanken" style={{ fontWeight: 800, fontSize: '15px', color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>
               Fin<span style={{ color: '#0FEE65' }}>Buddy</span>
             </span>
           </div>
 
           {/* Centre nav links — desktop only */}
-          <div className="hidden md:flex" style={{ gap: '2rem' }}>
+          <div className="hidden lg:flex" style={{ gap: '2rem', alignItems: 'center' }}>
             {[['Features','#features'],['Dashboard','#showcase'],['AI Coach','#coach'],['Pricing','#pricing'],['FAQ','#faq']].map(([label, href]) => (
               <a
                 key={label}
                 href={href}
-                onClick={e => { e.preventDefault(); document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' }); }}
+                onClick={e => { 
+                  e.preventDefault(); 
+                  document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' }); 
+                }}
                 className="font-hanken"
                 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', transition: 'color 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
@@ -260,8 +296,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
             ))}
           </div>
 
-          {/* Right CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Right CTAs — desktop only */}
+          <div className="hidden lg:flex" style={{ alignItems: 'center', gap: '12px' }}>
             <button
               onClick={() => onAuthTrigger('signin')}
               className="font-hanken"
@@ -274,130 +310,102 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
             <button
               onClick={() => onAuthTrigger('signup')}
               className="font-hanken"
-              style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#000', background: '#0FEE65', border: 'none', cursor: 'pointer', padding: '10px 20px', borderRadius: '9999px', boxShadow: '0 0 20px rgba(15,238,101,0.3)', transition: 'all 0.2s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(255,255,255,0.2)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0FEE65'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(15,238,101,0.3)'; }}
+              style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#121212', background: '#0FEE65', border: 'none', cursor: 'pointer', padding: '10px 20px', borderRadius: '12px', boxShadow: '0 0 20px rgba(15,238,101,0.3)', transition: 'all 0.2s' }}
+              onMouseEnter={e => { 
+                (e.currentTarget as HTMLButtonElement).style.background = '#fff'; 
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(255,255,255,0.2)'; 
+              }}
+              onMouseLeave={e => { 
+                (e.currentTarget as HTMLButtonElement).style.background = '#0FEE65'; 
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(15,238,101,0.3)'; 
+              }}
             >
               Get Started
             </button>
           </div>
+
+          {/* Mobile hamburger — lg:hidden */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden flex items-center justify-center bg-transparent border-none text-white cursor-pointer"
+            style={{ outline: 'none' }}
+          >
+            <span className="material-symbols-outlined text-2xl">
+              {mobileMenuOpen ? 'close' : 'menu'}
+            </span>
+          </button>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '72px',
+              left: '0',
+              right: '0',
+              background: 'rgba(18, 18, 18, 0.95)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '18px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.25)',
+              zIndex: 1001,
+            }}
+          >
+            {[['Features','#features'],['Dashboard','#showcase'],['AI Coach','#coach'],['Pricing','#pricing'],['FAQ','#faq']].map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                onClick={e => { 
+                  e.preventDefault(); 
+                  setMobileMenuOpen(false);
+                  document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' }); 
+                }}
+                className="font-hanken text-sm font-bold uppercase tracking-wider text-white/70 hover:text-white"
+                style={{ textDecoration: 'none' }}
+              >
+                {label}
+              </a>
+            ))}
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onAuthTrigger('signin');
+                }}
+                className="font-hanken h-12 rounded-[12px] bg-transparent border border-white/20 text-white font-bold text-xs uppercase tracking-widest cursor-pointer"
+              >
+                Log in
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onAuthTrigger('signup');
+                }}
+                className="font-hanken h-12 rounded-[12px] bg-[#0FEE65] border-none text-[#121212] font-black text-xs uppercase tracking-widest cursor-pointer"
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
-      {/* ──────────────────────────────
-          SECTION 2: HERO (Scroll-Scrubbed Animation)
-          ────────────────────────────── */}
-      <section className="relative pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 min-h-[90vh] items-center bg-grid-pattern">
-        
-        {/* Left Side Content */}
-        <motion.div 
-          variants={animContainerVariants}
-          initial="hidden"
-          animate="visible"
-          className="lg:col-span-6 flex flex-col text-left justify-center gap-6 relative z-10"
-        >
-          <motion.div variants={animItemVariants} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 self-start">
-            <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
-            <span className="font-hanken text-[10px] font-bold uppercase tracking-wider text-black/65">
-              AI Powered Student Finance Dashboard
-            </span>
-          </motion.div>
+      {/* ── HERO SECTION ── */}
+      <HeroSection onAuthTrigger={onAuthTrigger} prefersReducedMotion={prefersReducedMotion} />
 
-          <motion.h1 variants={animItemVariants} className="font-hanken text-5xl sm:text-7xl font-extrabold tracking-tight text-black leading-[1.05]">
-            Money Management <br />
-            Built <br />
-            For <span className="text-[#00aa3b] underline decoration-neon-green decoration-wavy decoration-2 underline-offset-8">Students</span>.
-          </motion.h1>
-
-          <motion.p variants={animItemVariants} className="font-sans text-base text-black/60 max-w-lg leading-relaxed mt-2">
-            Track expenses, plan budgets, save smarter, scan receipts, and receive AI-powered financial insights, all inside one beautiful dashboard.
-          </motion.p>
-
-          <motion.div variants={animItemVariants} className="flex flex-col sm:flex-row gap-4 mt-2">
-            <button 
-              onClick={() => onAuthTrigger('signup')}
-              className="bg-[#121212] text-white hover:bg-black px-8 py-4 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-lg cursor-pointer hover:scale-103"
-            >
-              Get Started Free
-            </button>
-            <a 
-              href="#showcase"
-              className="inline-flex items-center justify-center bg-white border border-gray-200 text-black hover:bg-gray-50 px-8 py-4 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              Watch Demo
-            </a>
-          </motion.div>
-
-          {/* Trust Indicators */}
-          <motion.div variants={animItemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-8 border-t border-gray-150 pt-6">
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">done_all</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">10K+ Expenses</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">bolt</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">AI Insights</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">celebration</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">Free Forever</span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-xl text-[#00aa3b]">verified_user</span>
-              <span className="text-[11px] font-hanken uppercase font-bold text-black/50 tracking-wider">Secure AES</span>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Right Side Floating Mobile Graphic */}
-        <motion.div
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="lg:col-span-6 relative flex justify-center items-center h-[540px] w-full"
-        >
-          {/* Large Hero Mobile Dashboard Graphic */}
-          <img 
-            src={heroMobileImg}
-            alt="FinBuddy Mobile Dashboard Mockup"
-            className="relative z-10 w-auto h-[560px] md:h-[660px] max-h-[580px] object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.5)] transform rotate-2 hover:rotate-0 transition-all duration-500 hover:scale-[1.03]"
-          />
-
-          {/* Floating Cards (Around the mobile graphic to preserve high-fidelity visual context) */}
-          <div className="absolute top-12 -left-8 bg-[#0B0B0C] border border-white/10 text-white py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 z-20 animate-float-slow">
-            <span className="material-symbols-outlined text-sm text-neon-green">savings</span>
-            <div className="text-left">
-              <p className="text-[8px] text-white/40 font-bold uppercase tracking-wider">Saved This Week</p>
-              <h4 className="text-xs font-bold text-white leading-tight">Saved ₹2,300</h4>
-            </div>
-          </div>
-
-          <div className="absolute top-1/2 -right-8 bg-[#0B0B0C] border border-white/10 text-white py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 z-20 animate-float-medium">
-            <span className="material-symbols-outlined text-sm text-neon-green">laptop_mac</span>
-            <div className="text-left">
-              <p className="text-[8px] text-white/40 font-bold uppercase tracking-wider">College Goal</p>
-              <h4 className="text-xs font-bold text-white leading-tight">Laptop 65%</h4>
-            </div>
-          </div>
-
-          <div className="absolute -bottom-8 left-12 bg-[#0B0B0C] border border-neon-green/30 text-white py-3 px-5 rounded-2xl shadow-2xl flex items-start gap-2.5 z-20 max-w-[280px] animate-float-slow">
-            <span className="material-symbols-outlined text-base text-neon-green mt-0.5">lightbulb</span>
-            <div className="text-left">
-              <p className="text-[8px] text-neon-green font-bold uppercase tracking-wider">AI Insight</p>
-              <p className="text-[10px] text-white/80 leading-normal font-sans mt-0.5">
-                "Skipping Friday delivery puts you 12% closer to yourElectric Scooter goal."
-              </p>
-            </div>
-          </div>
-
-        </motion.div>
-      </section>
 
       {/* ──────────────────────────────
           SECTION 3: SOCIAL PROOF
           ────────────────────────────── */}
-      <section className="bg-[#fbf9f8] border-t border-b border-gray-150 py-16 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <section className="bg-white border-t border-b border-gray-150 py-16 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center scroll-reveal">
           <div className="flex flex-col justify-center items-center">
             <span className="text-4xl sm:text-5xl font-black text-black tracking-tight leading-none numeric-display">
               {stats.expenses.toLocaleString()}+
@@ -445,7 +453,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto mb-16"
+          className="text-center max-w-2xl mx-auto mb-16 scroll-reveal"
         >
           <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 font-hanken">The Challenge</span>
           <h2 className="font-hanken text-4xl md:text-5xl font-black text-black tracking-tight mt-3">
@@ -458,7 +466,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 scroll-reveal-children"
         >
           {/* Card 1: Overspending */}
           <motion.div variants={animItemVariants} className="bg-[#0B0B0C] text-white p-6 rounded-[28px] border border-white/[0.08] hover-lift-dark text-left flex flex-col justify-between h-[300px]">
@@ -542,7 +550,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
           SECTION 5: WHY FINBUDDY
           ────────────────────────────── */}
       <section id="features" className="px-6 md:px-12 py-12 max-w-7xl mx-auto">
-        <div className="bg-[#0B0B0C] text-white rounded-[40px] p-8 md:p-16 relative overflow-hidden border border-white/15">
+        <div className="bg-[#0B0B0C] text-white rounded-[40px] p-8 md:p-16 relative overflow-hidden border border-white/15 scroll-reveal">
           {/* Subtle Ambient light */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-neon-green/5 rounded-full blur-[100px] pointer-events-none"></div>
           
@@ -753,8 +761,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
       {/* ──────────────────────────────
           SECTION 6: LIVE DASHBOARD SHOWCASE
           ────────────────────────────── */}
-      <section id="showcase" className="py-24 bg-[#fbf9f8] border-t border-gray-150">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 text-center">
+      <section id="showcase" className="py-24 bg-white border-t border-gray-150">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 text-center scroll-reveal">
           <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 font-hanken">Interactive Sandbox</span>
           <h2 className="font-hanken text-4xl md:text-5xl font-black text-black tracking-tight mt-3 mb-4">
             Live Dashboard Showcase.
@@ -1058,7 +1066,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
           Four Steps To Better Habits.
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative scroll-reveal-children">
           
           {/* Glowing horizontal connector line on larger screens */}
           <div className="hidden md:block absolute top-[44px] left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-neon-green via-[#00aa3b] to-black opacity-30 pointer-events-none"></div>
@@ -1294,7 +1302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
       {/* ──────────────────────────────
           SECTION 10: ANALYTICS
           ────────────────────────────── */}
-      <section className="py-24 bg-[#fbf9f8] border-t border-b border-gray-150">
+      <section className="py-24 bg-white border-t border-b border-gray-150">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="text-center max-w-xl mx-auto mb-16">
             <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 font-hanken">Spend Flow</span>
@@ -1568,7 +1576,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthTrigger }) => {
       {/* ──────────────────────────────
           SECTION 13: TESTIMONIALS
           ────────────────────────────── */}
-      <section className="py-24 bg-[#fbf9f8] border-t border-gray-150">
+      <section className="py-24 bg-white border-t border-gray-150">
         <div className="max-w-7xl mx-auto px-6 md:px-12 text-center">
           <span className="text-[10px] uppercase font-bold tracking-widest text-black/40 font-hanken">Reviews</span>
           <h2 className="font-hanken text-4xl md:text-5xl font-black text-black tracking-tight mt-3 mb-16">
