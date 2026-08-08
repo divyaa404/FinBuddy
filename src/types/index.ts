@@ -46,3 +46,19 @@ export interface Participant {
   hasPaid: boolean;
   amountOwed: number;
 }
+
+export interface WishItem {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+}
+
+export interface SubscriptionItem {
+  id: string;
+  name: string;
+  cost: number;
+  isActive: boolean;
+  category: string;
+}
+

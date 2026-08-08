@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../../firebase/config';
+import { auth, isFirebaseConfigured } from '../../firebase/config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
@@ -66,6 +66,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
       return;
     }
 
+    if (!isFirebaseConfigured) {
+      resolveAuth(null);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       resolveAuth(currentUser);
     }, (err) => {
@@ -80,6 +85,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
   }, []);
 
   const handleGoogleLogin = async () => {
+    if (!isFirebaseConfigured) {
+      setError("Google Login is not available in local demo mode. Please click 'Demo Login' to start.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const provider = new GoogleAuthProvider();
