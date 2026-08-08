@@ -18,6 +18,7 @@ import { downloadStatementPDF } from './utils/pdfGenerator';
 // Dashboard Components
 import { SpendingCharts } from './components/dashboard/SpendingCharts';
 import { StudentFinanceHome } from './components/dashboard/StudentFinanceHome';
+import { FloatingAIAssistant } from './components/dashboard/FloatingAIAssistant';
 
 // Split Components
 import { CreateSplit } from './components/split/CreateSplit';
@@ -258,7 +259,11 @@ function App() {
             {/* 2. INSIGHTS TAB */}
             {activeTab === 'insights' && (
               <div className="w-full">
-                <SpendingCharts transactions={transactions} />
+                <SpendingCharts 
+                  transactions={transactions} 
+                  budgets={budgets}
+                  goals={goals}
+                />
               </div>
             )}
 
@@ -301,6 +306,8 @@ function App() {
                   budgets={budgets}
                   onUpdateBudget={handleUpdateBudget}
                   transactions={transactions}
+                  balance={balance}
+                  onAddTransaction={handleAddTransaction}
                 />
               </div>
             )}
@@ -444,6 +451,15 @@ function App() {
             activeTab={activeTab === 'budget' ? 'goals' : activeTab} 
             setActiveTab={handleTabChange} 
             onPayTrigger={() => setShowPayModal(true)} 
+          />
+
+          {/* Floating AI Assistant */}
+          <FloatingAIAssistant 
+            user={user}
+            transactions={transactions}
+            budgets={budgets}
+            goals={goals}
+            balance={balance}
           />
 
         </div>
