@@ -195,7 +195,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
 
   if (!splitData || isInitializing) {
     return (
-      <Card variant="vessel" className="py-12 flex flex-col items-center justify-center text-white/40 border border-white/[0.08] backdrop-blur-md bg-white/[0.03]">
+      <Card variant="vessel" className="py-12 flex flex-col items-center justify-center text-white/40 border border-white/[0.08] backdrop-blur-md bg-[#121212]">
         <div className="w-32 h-32">
           <LottiePlayer animationData={loadingMainAnim} loop={true} />
         </div>
@@ -233,7 +233,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
       <div className="lg:col-span-7 flex flex-col gap-6">
         
         {/* QR Code and Meta Vessel */}
-        <Card variant="vessel" className="p-6 border border-white/[0.08] rounded-2xl flex flex-col gap-5 bg-white/[0.02] backdrop-blur-md">
+        <Card variant="vessel" className="p-6 border border-white/[0.08] rounded-2xl flex flex-col gap-5 bg-[#121212] backdrop-blur-md">
           <div className="flex justify-between items-start border-b border-white/5 pb-3">
             <div>
               <span className="text-[9px] uppercase tracking-wider text-neon-green font-extrabold px-2 py-0.5 rounded bg-neon-green/10 border border-neon-green/20">
@@ -269,7 +269,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
                       Have roomies scan the QR or share this joining link:
                     </p>
                   </div>
-                  <div className="bg-[#121214] text-neon-green text-[10px] p-2.5 rounded-xl font-mono break-all border border-white/5 select-all">
+                  <div className="bg-[#1b1c1c] text-[#0fee65] text-[10px] p-2.5 rounded-xl font-mono break-all border border-white/5 select-all">
                     {participantUrl}
                   </div>
                 </div>
@@ -279,7 +279,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
               <div className="grid grid-cols-2 gap-3 mt-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl">
                 <button
                   onClick={handleShareWhatsApp}
-                  className="flex items-center justify-center gap-2 py-2 px-3 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 hover:border-[#25D366]/40 text-[#25D366] rounded-xl font-hanken font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-2 py-2 px-3 bg-[#0fee65]/10 hover:bg-[#0fee65]/20 border border-[#0fee65]/30 hover:border-[#0fee65]/40 text-[#0fee65] rounded-xl font-hanken font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">share</span>
                   Share on WhatsApp
@@ -295,7 +295,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
             </div>
           ) : (
             /* FINALIZED SETTLEMENT STATUS */
-            <div className="bg-[#121214] p-4.5 rounded-2xl border border-white/5 flex flex-col gap-3.5">
+            <div className="bg-[#1b1c1c] p-4.5 rounded-2xl border border-white/5 flex flex-col gap-3.5">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-white/60">Finalized Split Ratio:</span>
                 <span className="text-neon-green font-bold uppercase text-[10px]">
@@ -332,7 +332,7 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
                 </label>
                 <div 
                   ref={containerRef}
-                  className="relative w-full h-14 bg-[#121214] border border-white/10 rounded-full flex items-center justify-center overflow-hidden shadow-inner"
+                  className="relative w-full h-14 bg-[#1b1c1c] border border-white/10 rounded-full flex items-center justify-center overflow-hidden shadow-inner"
                 >
                   <span className="font-hanken text-[10px] uppercase font-black tracking-widest text-white/30 animate-pulse pointer-events-none select-none">
                     {participants.length === 0 ? 'Lobby is Empty' : 'Slide to Split >>>'}
@@ -382,12 +382,12 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
 
       {/* Participants Feed (Right Side) */}
       <div className="lg:col-span-5 flex flex-col gap-4">
-        <h4 className="font-hanken text-xs font-bold uppercase tracking-wider text-[#121212]/60 px-1 text-left">
+        <h4 className="font-hanken text-xs font-bold uppercase tracking-wider text-white/60 px-1 text-left">
           {isFinalized ? 'Settlement Log' : `Roomies Joined (${participants.length})`}
         </h4>
 
         {participants.length === 0 ? (
-          <Card variant="vessel" className="py-12 text-center text-white/40 flex flex-col items-center justify-center border border-white/[0.08] min-h-[220px] bg-white/[0.02] backdrop-blur-md">
+          <Card variant="vessel" className="py-12 text-center text-white/40 flex flex-col items-center justify-center border border-white/[0.08] min-h-[220px] bg-[#121212] backdrop-blur-md">
             <span className="material-symbols-outlined text-4xl mb-2 text-white/25 animate-pulse">groups</span>
             <p className="text-xs font-semibold">Awaiting roomies to join...</p>
             <p className="text-[10px] text-white/30 max-w-[200px] mt-1 mx-auto font-sans leading-relaxed">Roomies scan QR or browse the lobby link to select items live</p>
@@ -399,8 +399,8 @@ export const LiveSplitOwner: React.FC<LiveSplitOwnerProps> = ({
                 key={p.id}
                 className={`flex justify-between items-center p-3.5 rounded-2xl border transition-all duration-300 ${
                   p.hasPaid 
-                    ? 'bg-neon-green/5 border-neon-green/20' 
-                    : 'bg-[#121214] border-white/5 shadow-md'
+                    ? 'bg-[#0fee65]/10 border-[#0fee65]/20' 
+                    : 'bg-[#1b1c1c] border-white/5 shadow-md'
                 }`}
               >
                 <div className="flex items-center gap-3">

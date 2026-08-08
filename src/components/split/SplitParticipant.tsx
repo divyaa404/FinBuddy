@@ -200,7 +200,7 @@ export const SplitParticipant: React.FC<SplitParticipantProps> = ({ splitId }) =
 
             {splitData.mode === 'itemized' ? (
               /* Checkbox listing for items */
-              <div className="flex flex-col gap-2.5 bg-[#121214] border border-white/5 p-3.5 rounded-2xl">
+              <div className="flex flex-col gap-2.5 bg-[#1b1c1c] border border-white/5 p-3.5 rounded-2xl">
                 <span className="font-hanken text-[9px] uppercase font-bold tracking-widest text-white/40 border-b border-white/5 pb-1">
                   Select what you ordered
                 </span>
@@ -213,8 +213,8 @@ export const SplitParticipant: React.FC<SplitParticipantProps> = ({ splitId }) =
                         key={item.id}
                         className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all duration-200 select-none ${
                           isChecked 
-                            ? 'bg-neon-green/10 border-neon-green/30 text-white' 
-                            : 'bg-[#222]/50 border-white/5 text-white/60 hover:text-white'
+                            ? 'bg-[#0fee65]/10 border-[#0fee65]/30 text-white' 
+                            : 'bg-white/5 border-white/5 text-white/60 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -234,7 +234,7 @@ export const SplitParticipant: React.FC<SplitParticipantProps> = ({ splitId }) =
               </div>
             ) : (
               /* Even split lobby waiting room */
-              <div className="bg-[#121214] border border-white/5 p-5 rounded-2xl text-center flex flex-col items-center py-6">
+              <div className="bg-[#1b1c1c] border border-white/5 p-5 rounded-2xl text-center flex flex-col items-center py-6">
                 <div className="w-8 h-8 rounded-full border-2 border-t-neon-green border-white/10 animate-spin mb-3"></div>
                 <p className="text-xs text-white/80 font-medium font-hanken">Awaiting host finalization...</p>
                 <p className="text-[10px] text-white/40 mt-1.5 font-sans leading-relaxed">Host will split the bill of ₹{(splitData.totalAmount || 0).toLocaleString()} evenly.</p>
@@ -245,9 +245,9 @@ export const SplitParticipant: React.FC<SplitParticipantProps> = ({ splitId }) =
             <div className="flex flex-col gap-2 text-xs text-white/60 text-left border-t border-white/5 pt-3">
               <span className="font-hanken text-[9px] uppercase font-bold tracking-wider text-white/40">Roomies in Lobby:</span>
               <div className="flex flex-wrap gap-1.5 mt-1 font-sans">
-                <span className="px-2 py-0.5 rounded bg-[#222] text-white border border-white/5 font-semibold text-[9px]">{splitData.ownerName} (Host)</span>
+                <span className="px-2 py-0.5 rounded bg-white/10 text-white border border-white/5 font-semibold text-[9px]">{splitData.ownerName} (Host)</span>
                 {participants.filter(p => p.id !== localParticipantId).map(p => (
-                  <span key={p.id} className="px-2 py-0.5 rounded bg-[#222]/50 text-white/70 border border-white/5 text-[9px]">{p.name}</span>
+                  <span key={p.id} className="px-2 py-0.5 rounded bg-white/5 text-white/70 border border-white/5 text-[9px]">{p.name}</span>
                 ))}
               </div>
             </div>

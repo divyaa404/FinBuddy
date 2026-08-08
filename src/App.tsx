@@ -34,6 +34,7 @@ import { TransactionForm } from './components/transactions/TransactionForm';
 
 // Seed Data
 const INITIAL_TRANSACTIONS: Transaction[] = [
+  // August 2026
   { id: 't1', amount: 8000, type: 'income', category: 'Income', date: '2026-08-01', note: 'Monthly Pocket Allowance' },
   { id: 't2', amount: 12000, type: 'income', category: 'Income', date: '2026-08-05', note: 'Freelance Frontend Design' },
   { id: 't3', amount: 860, type: 'expense', category: 'Food', date: '2026-08-06', note: 'Swiggy Dinner' },
@@ -43,7 +44,41 @@ const INITIAL_TRANSACTIONS: Transaction[] = [
   { id: 't7', amount: 420, type: 'expense', category: 'Food', date: '2026-08-05', note: 'McDonalds lunch' },
   { id: 't8', amount: 150, type: 'expense', category: 'Food', date: '2026-08-06', note: 'Campus Canteen chai' },
   { id: 't9', amount: 120, type: 'expense', category: 'Transport', date: '2026-08-06', note: 'Metro card recharge' },
-  { id: 't10', amount: 650, type: 'expense', category: 'Entertainment', date: '2026-08-01', note: 'Movie tickets PVR' }
+  { id: 't10', amount: 650, type: 'expense', category: 'Entertainment', date: '2026-08-01', note: 'Movie tickets PVR' },
+  
+  // July 2026
+  { id: 't11', amount: 8000, type: 'income', category: 'Income', date: '2026-07-01', note: 'Monthly Pocket Allowance' },
+  { id: 't12', amount: 1400, type: 'expense', category: 'Shopping', date: '2026-07-12', note: 'Sneakers' },
+  { id: 't13', amount: 950, type: 'expense', category: 'Food', date: '2026-07-15', note: 'Cafe date' },
+  { id: 't14', amount: 200, type: 'expense', category: 'Transport', date: '2026-07-20', note: 'Auto fare' },
+  { id: 't15', amount: 199, type: 'expense', category: 'Subscriptions', date: '2026-07-02', note: 'Spotify Premium' },
+  { id: 't16', amount: 1200, type: 'expense', category: 'Entertainment', date: '2026-07-25', note: 'Concert ticket' },
+  
+  // June 2026
+  { id: 't17', amount: 8000, type: 'income', category: 'Income', date: '2026-06-01', note: 'Monthly Pocket Allowance' },
+  { id: 't18', amount: 5000, type: 'income', category: 'Income', date: '2026-06-10', note: 'Part-time gig' },
+  { id: 't19', amount: 2200, type: 'expense', category: 'Food', date: '2026-06-14', note: 'Birthday treat' },
+  { id: 't20', amount: 199, type: 'expense', category: 'Subscriptions', date: '2026-06-02', note: 'Spotify Premium' },
+  { id: 't21', amount: 450, type: 'expense', category: 'Transport', date: '2026-06-18', note: 'Uber cab' },
+  
+  // May 2026
+  { id: 't22', amount: 8000, type: 'income', category: 'Income', date: '2026-05-01', note: 'Monthly Pocket Allowance' },
+  { id: 't23', amount: 3500, type: 'expense', category: 'Others', date: '2026-05-05', note: 'Exam fees' },
+  { id: 't24', amount: 800, type: 'expense', category: 'Food', date: '2026-05-12', note: 'Pizza night' },
+  { id: 't25', amount: 199, type: 'expense', category: 'Subscriptions', date: '2026-05-02', note: 'Spotify Premium' },
+  
+  // April 2026
+  { id: 't26', amount: 8000, type: 'income', category: 'Income', date: '2026-04-01', note: 'Monthly Pocket Allowance' },
+  { id: 't27', amount: 11000, type: 'income', category: 'Income', date: '2026-04-15', note: 'Freelance Frontend Design' },
+  { id: 't28', amount: 4000, type: 'expense', category: 'Shopping', date: '2026-04-20', note: 'New monitor' },
+  { id: 't29', amount: 600, type: 'expense', category: 'Food', date: '2026-04-22', note: 'Groceries' },
+  { id: 't30', amount: 199, type: 'expense', category: 'Subscriptions', date: '2026-04-02', note: 'Spotify Premium' },
+  
+  // March 2026
+  { id: 't31', amount: 8000, type: 'income', category: 'Income', date: '2026-03-01', note: 'Monthly Pocket Allowance' },
+  { id: 't32', amount: 1500, type: 'expense', category: 'Entertainment', date: '2026-03-10', note: 'Theme park' },
+  { id: 't33', amount: 700, type: 'expense', category: 'Food', date: '2026-03-15', note: 'Restaurant' },
+  { id: 't34', amount: 199, type: 'expense', category: 'Subscriptions', date: '2026-03-02', note: 'Spotify Premium' },
 ];
 
 const INITIAL_BUDGETS: Budget[] = [
