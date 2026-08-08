@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { auth, isFirebaseConfigured } from '../../firebase/config';
-import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { Button } from '../ui/Button';
@@ -230,7 +229,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
 
   if (isAuthModalOpen || window.location.pathname === '/login' || window.location.pathname === '/signup') {
     return (
-      <div className="auth-page min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center py-8 px-4 relative overflow-y-auto">
+      <div className="auth-page min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center pt-28 pb-8 px-4 relative overflow-y-auto">
         {/* Subtle radial green glow behind content */}
         <div
           className="absolute inset-0 z-0 pointer-events-none"

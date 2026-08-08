@@ -124,7 +124,7 @@ Guidelines:
           "Authorization": `Bearer ${GROK_KEY}`
         },
         body: JSON.stringify({
-          model: "grok-beta",
+          model: "grok-2-latest",
           messages: [
             { role: "system", content: systemPrompt },
             ...updatedMessages.slice(-5) // Send last 5 messages for context

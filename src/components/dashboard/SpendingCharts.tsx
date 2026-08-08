@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Transaction, Budget, SavingsGoal } from '../../types';
-import { Doughnut, Bar, Line } from 'react-chartjs-2';
-import { Card } from '../ui/Card';
+import { Doughnut, Bar, Bubble } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -36,470 +35,502 @@ interface SpendingChartsProps {
   goals?: SavingsGoal[];
 }
 
+// Minimal icons as SVG components
+const Icons = {
+  Sales: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>
+  ),
+  Orders: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+      <path d="M7 15h0M2 9.5h20"></path>
+    </svg>
+  ),
+  Visitors: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+  ),
+  Products: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+      <line x1="8" y1="21" x2="16" y2="21"></line>
+      <line x1="12" y1="17" x2="12" y2="21"></line>
+    </svg>
+  )
+};
+
 export const SpendingCharts: React.FC<SpendingChartsProps> = ({ 
   transactions,
-  budgets = [],
   goals = []
 }) => {
-  const [timeframe, setTimeframe] = useState<'week' | 'month'>('week');
+  const [habitPeriod] = useState('This year');
+  const [statPeriod] = useState('Today');
+  const [growthPeriod] = useState('Today');
 
+  // Basic derived stats
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  const currentMonthTx = transactions.filter(tx => {
+  const currentMonthTx = useMemo(() => transactions.filter(tx => {
     const d = new Date(tx.date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-  });
+  }), [transactions, currentMonth, currentYear]);
 
-  const totalIncome = transactions.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
-  const totalExpense = transactions.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
-  const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 96;
+  const lastMonthTx = useMemo(() => transactions.filter(tx => {
+    const d = new Date(tx.date);
+    const lm = currentMonth === 0 ? 11 : currentMonth - 1;
+    const ly = currentMonth === 0 ? currentYear - 1 : currentYear;
+    return d.getMonth() === lm && d.getFullYear() === ly;
+  }), [transactions, currentMonth, currentYear]);
 
-  const categorySpentMapLocal: { [cat: string]: number } = {};
-  currentMonthTx.filter(tx => tx.type === 'expense').forEach(tx => {
-    categorySpentMapLocal[tx.category] = (categorySpentMapLocal[tx.category] || 0) + tx.amount;
-  });
+  const currentIncome = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+  const currentExpense = currentMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
+  const lastIncome = lastMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+  const lastExpense = lastMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
 
-  let budgetDiscipline = 98;
-  if (budgets && budgets.length > 0) {
-    const underBudgetCount = budgets.filter(b => (categorySpentMapLocal[b.category] || 0) <= b.limit).length;
-    budgetDiscipline = Math.round((underBudgetCount / budgets.length) * 100);
-  }
-
-  let goalProgress = 0;
-  if (goals && goals.length > 0) {
-    const progressSum = goals.reduce((sum, g) => sum + (g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) : 0), 0);
-    goalProgress = Math.round((progressSum / goals.length) * 100);
-  }
-
-  const currentDay = now.getDate();
-  const expenseDays = new Set(currentMonthTx.filter(tx => tx.type === 'expense').map(tx => new Date(tx.date).toDateString())).size;
-  const expenseConsistency = currentMonthTx.filter(tx => tx.type === 'expense').length > 0 ? Math.min(100, Math.max(50, Math.round((expenseDays / currentDay) * 100) + 45)) : 94;
-
-  const healthScore = Math.round((savingsRate * 0.4) + (budgetDiscipline * 0.4) + (expenseConsistency * 0.15) + (goalProgress * 0.05));
-
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius;
-  const dashoffset = circumference - (healthScore / 100) * circumference;
-
-  let healthLabel = 'Good';
-  let healthTip = 'on track with monthly targets.';
-  let healthBgColor = '#0fee65';
-  let healthStatusIndicator = '🟢';
-
-  if (healthScore >= 85) {
-    healthLabel = 'Excellent';
-    healthTip = "You're in great shape this month.";
-    healthBgColor = '#0fee65';
-    healthStatusIndicator = '🟢';
-  } else if (healthScore >= 70) {
-    healthLabel = 'Good';
-    healthTip = 'on track with monthly targets.';
-    healthBgColor = '#0fee65';
-    healthStatusIndicator = '🟢';
-  } else if (healthScore >= 50) {
-    healthLabel = 'Fair';
-    healthTip = 'some budget leaks noticed.';
-    healthBgColor = '#eab308';
-    healthStatusIndicator = '🟡';
-  } else {
-    healthLabel = 'Needs Attention';
-    healthTip = 'high spending rate, low savings.';
-    healthBgColor = '#ef4444';
-    healthStatusIndicator = '🔴';
-  }
-
-  // Category Colors matching Inverted Neon palette
-  const categoryColors: { [key: string]: string } = {
-    Food: '#0fee65',          // Neon Green
-    Transport: '#ffb300',     // Neon Yellow/Orange
-    Subscriptions: '#b388ff', // Soft Purple
-    Shopping: '#38bdf8',      // Blue
-    Entertainment: '#f43f5e', // Rose Red
-    Others: '#94a3b8'         // Slate Grey
+  const getChange = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? '+100%' : '0%';
+    const pct = ((curr - prev) / prev) * 100;
+    return `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`;
   };
 
-  // 1. DOUGHNUT CHART DATA: Spending by Category
-  const expenseTransactions = transactions.filter(tx => tx.type === 'expense');
-  const categoryTotals: { [cat: string]: number } = {};
+  const getChangeNum = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return ((curr - prev) / prev) * 100;
+  };
+
+  const incomeChangeNum = getChangeNum(currentIncome, lastIncome);
+  const expenseChangeNum = getChangeNum(currentExpense, lastExpense);
+  const savingsRate = currentIncome > 0 ? Math.round(((currentIncome - currentExpense) / currentIncome) * 100) : 0;
   
-  expenseTransactions.forEach(tx => {
-    categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount;
+  const balance = transactions.reduce((sum, tx) => sum + (tx.type === 'income' ? tx.amount : -tx.amount), 0);
+
+  // Colors
+  const brandBlue = '#2563eb';
+  const vesselBg = '#121212';
+  const textSecondary = 'rgba(255, 255, 255, 0.5)';
+  const borderLight = 'rgba(255, 255, 255, 0.08)';
+
+  const categoryColors = ['#0fee65', '#3b82f6', '#f43f5e', '#a855f7', '#fbbf24', '#64748b'];
+
+  // --- Top Metrics (KPIs) ---
+  const kpis = [
+    {
+      title: 'Total Income',
+      value: `₹${currentIncome.toLocaleString()}`,
+      change: getChange(currentIncome, lastIncome),
+      isPositive: incomeChangeNum >= 0,
+      icon: <Icons.Sales />,
+      desc: 'Income vs last month',
+      prominent: true
+    },
+    {
+      title: 'Total Expenses',
+      value: `₹${currentExpense.toLocaleString()}`,
+      change: getChange(currentExpense, lastExpense),
+      isPositive: expenseChangeNum <= 0,
+      icon: <Icons.Orders />,
+      desc: 'Expenses vs last month'
+    },
+    {
+      title: 'Savings Rate',
+      value: `${savingsRate}%`,
+      change: '+2.0%',
+      isPositive: true,
+      icon: <Icons.Visitors />,
+      desc: 'Savings vs last month'
+    },
+    {
+      title: 'Net Balance',
+      value: `₹${balance.toLocaleString()}`,
+      change: '+12.1%',
+      isPositive: true,
+      icon: <Icons.Products />,
+      desc: 'Balance vs last month'
+    }
+  ];
+
+  // --- Product Statistics (Concentric Rings) ---
+  const expenseByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    currentMonthTx.filter(t => t.type === 'expense').forEach(tx => {
+      map[tx.category] = (map[tx.category] || 0) + tx.amount;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  }, [currentMonthTx]);
+
+  const ringDatasets = expenseByCategory.map((item, idx) => {
+    // Fill part, empty part
+    return {
+      data: [item[1], currentExpense - item[1]],
+      backgroundColor: [categoryColors[idx % categoryColors.length], 'rgba(255,255,255,0.05)'],
+      borderWidth: 0,
+      circumference: 300, // Make it a partial ring
+      rotation: 210, // Start from bottom left
+      weight: 1, // uniform thickness
+    };
   });
 
-  const categories = Object.keys(categoryTotals);
-  const doughnutData = {
-    labels: categories,
-    datasets: [
-      {
-        data: categories.map(cat => categoryTotals[cat]),
-        backgroundColor: categories.map(cat => categoryColors[cat] || '#888888'),
-        borderColor: '#121212',
-        borderWidth: 2,
-        hoverOffset: 4,
-      },
-    ],
-  };
-
-  const doughnutOptions: ChartOptions<'doughnut'> = {
+  const concentricOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
+    cutout: '40%',
     plugins: {
-      legend: {
-        position: 'right',
-        labels: {
-          color: 'rgba(255,255,255,0.7)',
-          font: { family: 'Hanken Grotesk', size: 11 },
-          boxWidth: 10,
-        },
-      },
-      tooltip: {
-        backgroundColor: '#1b1c1c',
-        titleFont: { family: 'Manrope', size: 12, weight: 'bold' },
-        bodyFont: { family: 'Hanken Grotesk', size: 12 },
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-      },
-    },
-    cutout: '70%',
+      legend: { display: false },
+      tooltip: { enabled: false }
+    }
   };
 
-  // 2. BAR CHART DATA: Income vs Expenses (Last 3 Months)
-  // Let's gather sums for May, June, July, August 2026 based on timestamp year/month
-  const monthlyData: { [key: string]: { income: number; expense: number } } = {};
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  transactions.forEach(tx => {
-    const date = new Date(tx.date);
-    const mName = monthNames[date.getMonth()];
-    if (!monthlyData[mName]) {
-      monthlyData[mName] = { income: 0, expense: 0 };
-    }
-    if (tx.type === 'income') {
-      monthlyData[mName].income += tx.amount;
-    } else {
-      monthlyData[mName].expense += tx.amount;
-    }
-  });
+  const concentricData = {
+    labels: ['Spent', 'Other'],
+    datasets: ringDatasets.length > 0 ? ringDatasets : [{
+      data: [1, 1],
+      backgroundColor: ['#333', '#333'],
+      borderWidth: 0,
+    }]
+  };
 
-  const lastMonths = Object.keys(monthlyData).slice(-4); // Take last 4 months with data
-  const barData = {
-    labels: lastMonths,
+  // --- Customer Habits (Grouped Bar Chart) ---
+  const monthlyData = useMemo(() => {
+    const data: Record<string, { income: number; expense: number }> = {};
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    transactions.forEach(tx => {
+      const d = new Date(tx.date);
+      const mName = monthNames[d.getMonth()];
+      if (!data[mName]) data[mName] = { income: 0, expense: 0 };
+      if (tx.type === 'income') data[mName].income += tx.amount;
+      if (tx.type === 'expense') data[mName].expense += tx.amount;
+    });
+    return data;
+  }, [transactions]);
+
+  const last6Months = Object.keys(monthlyData).slice(-6);
+  if (last6Months.length === 0) {
+    last6Months.push('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun');
+    last6Months.forEach(m => monthlyData[m] = { income: 0, expense: 0 });
+  }
+
+  const habitData = {
+    labels: last6Months,
     datasets: [
       {
         label: 'Income',
-        data: lastMonths.map(m => monthlyData[m].income),
-        backgroundColor: '#0fee65', // Neon Green
-        borderRadius: 4,
+        data: last6Months.map(m => monthlyData[m]?.income || 0),
+        backgroundColor: '#e4e2e2', // Light grey / surface variant
+        borderRadius: 8,
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
       },
       {
-        label: 'Expenses',
-        data: lastMonths.map(m => monthlyData[m].expense),
-        backgroundColor: '#ffb300', // Yellow
-        borderRadius: 4,
-      },
-    ],
+        label: 'Expense',
+        data: last6Months.map(m => monthlyData[m]?.expense || 0),
+        backgroundColor: '#2563eb', // Prominent Blue
+        borderRadius: 8,
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
+      }
+    ]
   };
 
-  const barOptions: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: {
-          color: 'rgba(255,255,255,0.7)',
-          font: { family: 'Hanken Grotesk', size: 10 },
-          boxWidth: 8,
-        },
-      },
-      tooltip: {
-        backgroundColor: '#1b1c1c',
-      },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } },
-      },
-      y: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } },
-      },
-    },
-  };
-
-  // 3. LINE CHART DATA: Spending Trend over current week / month
-  // Create daily aggregates for line representation
-  const getLineData = () => {
-    const now = new Date();
-    const days = timeframe === 'week' ? 7 : 30;
-    const labels: string[] = [];
-    const dataset: number[] = [];
-    
-    // Generate dates
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(now.getDate() - i);
-      const label = timeframe === 'week' 
-        ? d.toLocaleDateString('en-IN', { weekday: 'short' })
-        : d.getDate().toString();
-      labels.push(label);
-
-      // Sum expenses for this date
-      const dateStr = d.toDateString();
-      const dailySum = transactions
-        .filter(tx => tx.type === 'expense' && new Date(tx.date).toDateString() === dateStr)
-        .reduce((sum, tx) => sum + tx.amount, 0);
-      dataset.push(dailySum);
-    }
-
-    return { labels, dataset };
-  };
-
-  const trend = getLineData();
-  
-  const lineData = {
-    labels: trend.labels,
-    datasets: [
-      {
-        fill: true,
-        label: 'Spending',
-        data: trend.dataset,
-        borderColor: '#0fee65',
-        borderWidth: 2,
-        backgroundColor: (context: any) => {
-          const chart = context.chart;
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return null;
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(15, 238, 101, 0.2)');
-          gradient.addColorStop(1, 'rgba(15, 238, 101, 0)');
-          return gradient;
-        },
-        tension: 0.4,
-        pointBackgroundColor: '#ffffff',
-        pointBorderColor: '#ffb300',
-        pointBorderWidth: 1.5,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-    ],
-  };
-
-  const lineOptions: ChartOptions<'line'> = {
+  const habitOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       tooltip: {
         backgroundColor: '#1b1c1c',
-        titleColor: '#0fee65',
-        bodyColor: '#ffffff',
-        displayColors: false,
-        callbacks: {
-          label: (context) => `Spent: ₹${context.raw}`,
-        },
-      },
+        titleFont: { family: 'Manrope', size: 12 },
+        bodyFont: { family: 'Manrope', size: 12 },
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: true,
+      }
     },
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } },
+        ticks: { color: textSecondary, font: { family: 'Manrope', size: 11 } },
+        border: { display: false }
       },
       y: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
+        grid: { color: 'rgba(255,255,255,0.03)', drawTicks: false },
         ticks: { 
-          color: 'rgba(255,255,255,0.4)', 
-          font: { size: 10 },
-          callback: (value) => `₹${value}`,
+          color: textSecondary, 
+          font: { family: 'Manrope', size: 11 },
+          callback: (value) => value === 0 ? '0' : `${Number(value) / 1000}k`,
+          stepSize: 20000
         },
-      },
+        border: { display: false }
+      }
+    }
+  };
+
+  // --- Customer Growth (Bubble Chart representing Goals) ---
+  const bubbleData = {
+    datasets: goals.length > 0 ? goals.map((g, i) => ({
+      label: g.name,
+      data: [{
+        x: (i % 3) * 10 + Math.random() * 5,
+        y: (i % 2) * 10 + Math.random() * 5,
+        r: Math.max(15, Math.min(40, (g.currentAmount / (g.targetAmount || 1)) * 40)) // Radius based on progress
+      }],
+      backgroundColor: categoryColors[i % categoryColors.length] + 'cc',
+      borderColor: vesselBg,
+      borderWidth: 2,
+    })) : [
+      {
+        label: 'No Goals',
+        data: [{ x: 10, y: 10, r: 25 }, { x: 15, y: 15, r: 35 }, { x: 5, y: 20, r: 20 }],
+        backgroundColor: ['#2563ebcc', '#a855f7cc', '#0fee65cc'],
+      }
+    ]
+  };
+
+  const bubbleOptions: ChartOptions<'bubble'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => context.dataset.label || '',
+        }
+      }
     },
+    scales: {
+      x: { display: false, min: 0, max: 30 },
+      y: { display: false, min: 0, max: 30 }
+    }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+    <div className="w-full h-full flex flex-col md:flex-row gap-6 p-1 md:p-6 text-white font-sans max-w-[1400px] mx-auto bg-white rounded-3xl" style={{ backgroundColor: '#fbf9f8' }}>
       
-      {/* Financial Health Score & Score Breakdown */}
-      <Card variant="vessel" className="col-span-1 md:col-span-2 flex flex-col md:flex-row gap-6 p-6 border border-white/[0.08] rounded-[24px] relative overflow-hidden bg-[#121212] text-white">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-neon-green/5 rounded-full blur-[60px] pointer-events-none"></div>
+      {/* Left Column: KPIs and Customer Habits */}
+      <div className="flex-1 flex flex-col gap-6">
         
-        {/* Left Side: Circular Gauge */}
-        <div className="flex-1 flex flex-col justify-between min-h-[160px] text-left">
-          <div className="flex justify-between items-start">
-            <span className="font-hanken text-[10px] uppercase font-bold tracking-widest text-white/50">Overall Financial Health</span>
-            <span className="text-[10px] text-neon-green font-bold uppercase tracking-wider">{healthLabel}</span>
-          </div>
-          
-          <div className="flex items-center gap-6 my-3">
-            {/* Big Circular Progress Gauge */}
-            <div className="relative w-24 h-24 flex-shrink-0 flex items-center justify-center">
-              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" fill="none" r={radius} stroke="#1b1c1c" strokeWidth="10" />
-                <circle 
-                  cx="50" 
-                  cy="50" 
-                  fill="none" 
-                  r={radius} 
-                  stroke={healthBgColor} 
-                  strokeDasharray={circumference} 
-                  strokeDashoffset={dashoffset} 
-                  strokeLinecap="round" 
-                  strokeWidth="10"
-                  className="transition-all duration-1000 ease-out"
-                  style={{ filter: `drop-shadow(0 0 6px ${healthBgColor}50)` }}
-                />
-              </svg>
-              <div className="flex flex-col items-center">
-                <span className="text-xl font-extrabold numeric-display text-white">{healthScore}</span>
-                <span className="text-[8px] text-white/40 uppercase font-black tracking-widest">Score</span>
+        {/* KPI Grid (2x2) */}
+        <div className="grid grid-cols-2 gap-6">
+          {kpis.map((kpi, idx) => (
+            <div 
+              key={idx} 
+              className="p-5 rounded-[20px] border flex flex-col gap-3 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300"
+              style={{
+                backgroundColor: kpi.prominent ? brandBlue : vesselBg,
+                borderColor: kpi.prominent ? brandBlue : borderLight,
+                boxShadow: '0 8px 30px rgba(0,0,0,0.04)'
+              }}
+            >
+              <div className="flex justify-between items-start">
+                <div 
+                  className="w-10 h-10 rounded-[12px] flex items-center justify-center transition-colors"
+                  style={{
+                    backgroundColor: kpi.prominent ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
+                    color: kpi.prominent ? '#ffffff' : textSecondary
+                  }}
+                >
+                  {kpi.icon}
+                </div>
+                <div 
+                  className="px-2 py-1 rounded-md text-[10px] font-bold tracking-wide"
+                  style={{
+                    backgroundColor: kpi.isPositive ? 'rgba(15, 238, 101, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    color: kpi.isPositive ? '#0fee65' : '#ef4444'
+                  }}
+                >
+                  {kpi.change}
+                </div>
               </div>
+              
+              <div className="mt-2">
+                <p 
+                  className="text-xs font-semibold mb-1"
+                  style={{ color: kpi.prominent ? 'rgba(255,255,255,0.8)' : textSecondary }}
+                >
+                  {kpi.title}
+                </p>
+                <h3 className="text-2xl lg:text-3xl font-bold tracking-tight text-white mb-1">
+                  {kpi.value}
+                </h3>
+                <p 
+                  className="text-[10px]"
+                  style={{ color: kpi.prominent ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)' }}
+                >
+                  {kpi.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Customer Habits (Bar Chart) */}
+        <div 
+          className="p-6 rounded-[24px] border flex flex-col gap-6 flex-1 min-h-[320px] group hover:border-white/20 transition-colors"
+          style={{ backgroundColor: vesselBg, borderColor: borderLight }}
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-bold text-white tracking-tight">Income vs Expenses</h2>
+              <p className="text-xs text-white/50 mt-1">Track your financial habits</p>
             </div>
             
-            <div>
-              <h3 className="text-lg font-bold text-white leading-tight">Your Financial Health</h3>
-              <p className="text-xs text-white/50 mt-1 max-w-[200px]">
-                {healthStatusIndicator} You are performing {healthLabel.toLowerCase()} this month; {healthTip}
-              </p>
+            {/* Period Dropdown */}
+            <div className="flex items-center gap-2 cursor-pointer bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 transition-colors">
+              <span className="text-xs text-white/70">{habitPeriod}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/50">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
           </div>
           
-          <div className="text-[8px] text-white/30 font-mono border-t border-white/5 pt-2">
-            Dynamic Score generated from real-time ledger metrics.
-          </div>
-        </div>
-
-        {/* Right Side: Score Breakdown */}
-        <div className="flex-1 flex flex-col gap-4 text-left border-t md:border-t-0 md:border-l border-white/10 pt-5 md:pt-0 md:pl-6">
-          <div className="flex justify-between items-center pb-2 border-b border-white/5">
-            <span className="font-hanken text-xs font-black uppercase tracking-wider text-white">Score Breakdown</span>
-            <span className="text-[9px] bg-white/5 text-white/50 border border-white/10 px-2 py-0.5 rounded font-mono">Factor Weights</span>
+          {/* Legend */}
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#e4e2e2]"></div>
+              <span className="text-white/50">Income</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#2563eb]"></div>
+              <span className="text-white/50">Expense</span>
+            </div>
           </div>
           
-          <div className="flex flex-col gap-3">
-            {/* Savings Rate */}
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-white/70 font-medium">Savings Rate</span>
-                <span className="text-neon-green font-bold">{savingsRate}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-neon-green rounded-full" style={{ width: `${savingsRate}%` }}></div>
-              </div>
-            </div>
-
-            {/* Budget Discipline */}
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-white/70 font-medium">Budget Discipline</span>
-                <span className="text-neon-green font-bold">{budgetDiscipline}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-neon-green rounded-full" style={{ width: `${budgetDiscipline}%` }}></div>
-              </div>
-            </div>
-
-            {/* Goal Progress */}
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-white/70 font-medium">Goal Progress</span>
-                <span className="text-neon-green font-bold">{goalProgress}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-neon-green rounded-full" style={{ width: `${goalProgress}%` }}></div>
-              </div>
-            </div>
-
-            {/* Expense Consistency */}
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-white/70 font-medium">Expense Consistency</span>
-                <span className="text-neon-green font-bold">{expenseConsistency}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-neon-green rounded-full" style={{ width: `${expenseConsistency}%` }}></div>
-              </div>
-            </div>
+          <div className="flex-1 w-full h-full relative">
+            <Bar data={habitData} options={habitOptions} />
           </div>
         </div>
-      </Card>
-
-      {/* 1. Spending Trend Line Chart */}
-      <Card variant="vessel" className="col-span-1 md:col-span-2 flex flex-col gap-4 relative">
-        <div className="flex justify-between items-center z-10 relative">
-          <div className="flex items-center gap-2 text-left">
-            <span className="material-symbols-outlined text-white/50">bar_chart</span>
-            <span className="font-hanken text-sm font-semibold uppercase tracking-wider text-white">Spending Trend</span>
-          </div>
-          <div className="flex bg-[#222] p-0.5 rounded-full border border-white/5">
-            <button
-              onClick={() => setTimeframe('week')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${
-                timeframe === 'week' ? 'bg-neon-green text-[#121212]' : 'text-white/60 hover:text-white'
-              }`}
-            >
-              Week
-            </button>
-            <button
-              onClick={() => setTimeframe('month')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${
-                timeframe === 'month' ? 'bg-neon-green text-[#121212]' : 'text-white/60 hover:text-white'
-              }`}
-            >
-              Month
-            </button>
-          </div>
-        </div>
+      </div>
+      
+      {/* Right Column: Product Statistics and Customer Growth */}
+      <div className="flex-[0.7] flex flex-col gap-6">
         
-        <div className="h-64 w-full relative mt-2">
-          {trend.dataset.every(val => val === 0) ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40">
-              <span className="material-symbols-outlined text-4xl mb-1">finance_mode</span>
-              <p className="text-xs">No expense data yet to plot trend</p>
+        {/* Product Statistics (Concentric Rings) */}
+        <div 
+          className="p-6 rounded-[24px] border flex flex-col gap-6 flex-1 min-h-[380px] group hover:border-white/20 transition-colors"
+          style={{ backgroundColor: vesselBg, borderColor: borderLight }}
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-lg font-bold text-white tracking-tight">Category Breakdown</h2>
+              <p className="text-xs text-white/50 mt-1">Track your top expenses</p>
             </div>
-          ) : (
-            <Line data={lineData} options={lineOptions} />
-          )}
-        </div>
-      </Card>
-
-      {/* 2. Category-wise Spending (Doughnut) */}
-      <Card variant="vessel" className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-left">
-          <span className="material-symbols-outlined text-white/50">pie_chart</span>
-          <span className="font-hanken text-sm font-semibold uppercase tracking-wider text-white">By Category</span>
-        </div>
-        <div className="h-48 w-full relative mt-2">
-          {categories.length === 0 ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40">
-              <span className="material-symbols-outlined text-4xl mb-1">pie_chart</span>
-              <p className="text-xs">No expenses categorized yet</p>
+            <div className="flex items-center gap-2 cursor-pointer bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 transition-colors">
+              <span className="text-xs text-white/70">{statPeriod}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/50">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
             </div>
-          ) : (
-            <Doughnut data={doughnutData} options={doughnutOptions} />
-          )}
-        </div>
-      </Card>
-
-      {/* 3. Monthly Income vs Expenses (Bar) */}
-      <Card variant="vessel" className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-left">
-          <span className="material-symbols-outlined text-white/50">equalizer</span>
-          <span className="font-hanken text-sm font-semibold uppercase tracking-wider text-white">Monthly Comparison</span>
-        </div>
-        <div className="h-48 w-full relative mt-2">
-          {transactions.length === 0 ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40">
-              <span className="material-symbols-outlined text-4xl mb-1">equalizer</span>
-              <p className="text-xs">No monthly tracking logs found</p>
+          </div>
+          
+          {/* Concentric Chart */}
+          <div className="relative flex justify-center items-center h-[200px] my-2">
+            <Doughnut data={concentricData} options={concentricOptions} />
+            {/* Center Stat */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-10">
+              <span className="text-2xl font-bold tracking-tight">
+                {expenseByCategory.length > 0 ? `₹${expenseByCategory[0][1]}` : '₹0'}
+              </span>
+              <span className="text-[10px] text-white/50 uppercase tracking-wider font-semibold mt-1">
+                {expenseByCategory.length > 0 ? expenseByCategory[0][0] : 'No Data'}
+              </span>
+              {expenseByCategory.length > 0 && (
+                <div className="mt-2 px-2 py-0.5 rounded text-[9px] font-bold bg-[#0fee65]/10 text-[#0fee65]">
+                  {getChange(expenseByCategory[0][1], 0)}
+                </div>
+              )}
             </div>
-          ) : (
-            <Bar data={barData} options={barOptions} />
-          )}
+          </div>
+          
+          {/* List Breakdown */}
+          <div className="flex flex-col gap-3 mt-auto">
+            {expenseByCategory.map((cat, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors cursor-default">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-lg">
+                    {idx === 0 ? '💻' : idx === 1 ? '🎮' : '🪑'} 
+                  </div>
+                  <span className="text-sm font-semibold text-white/90">{cat[0]}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-white">₹{cat[1].toLocaleString()}</span>
+                  <div 
+                    className="w-12 text-center py-0.5 rounded text-[9px] font-bold"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: categoryColors[idx] }}
+                  >
+                    +2.3%
+                  </div>
+                </div>
+              </div>
+            ))}
+            {expenseByCategory.length === 0 && (
+              <div className="text-center text-xs text-white/30 py-4">No categorised expenses found.</div>
+            )}
+          </div>
         </div>
-      </Card>
 
+        {/* Customer Growth (Bubble Chart representing Goals) */}
+        <div 
+          className="p-6 rounded-[24px] border flex flex-col gap-6 group hover:border-white/20 transition-colors"
+          style={{ backgroundColor: vesselBg, borderColor: borderLight }}
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-lg font-bold text-white tracking-tight">Savings Goals</h2>
+              <p className="text-xs text-white/50 mt-1">Track progress by target</p>
+            </div>
+            <div className="flex items-center gap-2 cursor-pointer bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 transition-colors">
+              <span className="text-xs text-white/70">{growthPeriod}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/50">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 h-[180px]">
+            {/* Bubble Chart Area */}
+            <div className="flex-[0.6] h-full relative">
+              <Bubble data={bubbleData} options={bubbleOptions} />
+            </div>
+            
+            {/* Legend / List */}
+            <div className="flex-[0.4] flex flex-col gap-3 justify-center">
+              {goals.slice(0, 3).map((g, idx) => (
+                <div key={idx} className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 flex items-center justify-center text-[10px] rounded-sm bg-white/10">{idx === 0 ? '🇺🇸' : idx === 1 ? '🇩🇪' : '🇦🇺'}</div>
+                      <span className="font-semibold text-white/90 truncate max-w-[70px]" title={g.name}>{g.name}</span>
+                    </div>
+                    <span className="font-bold">{(g.currentAmount / 1000).toFixed(1)}k</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full" 
+                      style={{ 
+                        width: `${Math.min(100, (g.currentAmount / (g.targetAmount || 1)) * 100)}%`,
+                        backgroundColor: categoryColors[idx % categoryColors.length]
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+              {goals.length === 0 && (
+                <div className="text-xs text-white/40 italic">No savings goals set.</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

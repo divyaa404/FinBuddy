@@ -123,7 +123,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       resizeCanvas();
     });
 
-    let resizeTimeout: NodeJS.Timeout;
+    let resizeTimeout: ReturnType<typeof setTimeout>;
     const onResize = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(resizeCanvas, 100);
@@ -253,7 +253,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   return (
     <section
       ref={sectionRef}
-      className="hidden lg:block relative w-full h-screen bg-[#0a0a0a] overflow-hidden"
+      className="hidden lg:block relative w-full h-screen bg-white overflow-hidden"
     >
       {/* Canvas Background */}
       <canvas 
@@ -272,7 +272,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         style={{
           zIndex: 5,
           background: 'linear-gradient(to bottom, transparent, rgba(15, 238, 101, 0.25), transparent)',
-          boxShadow: '0 0 8px rgba(15, 238, 101, 0.3)',
+          boxShadow: '0 0 8px rgba(15, 238, 101, 0.1)',
         }}
       />
       <div 
@@ -281,7 +281,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         style={{
           zIndex: 5,
           background: 'linear-gradient(to bottom, transparent, rgba(15, 238, 101, 0.25), transparent)',
-          boxShadow: '0 0 8px rgba(15, 238, 101, 0.3)',
+          boxShadow: '0 0 8px rgba(15, 238, 101, 0.1)',
         }}
       />
 
@@ -290,31 +290,31 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         
         {/* Left Content */}
         <div ref={leftRef} className="col-span-3 flex flex-col gap-6 text-left relative z-30">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 self-start">
-            <span className="w-2 h-2 rounded-full bg-[#0FEE65] animate-pulse"></span>
-            <span className="font-hanken text-[10px] font-bold uppercase tracking-wider text-white/70">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 self-start">
+            <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
+            <span className="font-hanken text-[10px] font-bold uppercase tracking-wider text-[#121212]/70">
               PERSONAL FINANCE FOR STUDENTS
             </span>
           </div>
 
-          <h1 className="font-hanken text-4xl xl:text-5.5xl font-extrabold tracking-tight text-white leading-[1.08]">
+          <h1 className="font-hanken text-4xl xl:text-5.5xl font-extrabold tracking-tight text-[#121212] leading-[1.08]">
             SMARTER MONEY.<br />SIMPLER LIFE.
           </h1>
 
-          <p className="font-sans text-sm text-white/60 leading-relaxed max-w-xs">
+          <p className="font-sans text-sm text-[#121212]/70 leading-relaxed max-w-xs font-semibold">
             Take control of your money, without the spreadsheets. Track expenses and plan budgets.
           </p>
 
           <div className="flex gap-4">
             <button 
               onClick={() => onAuthTrigger('signup')}
-              className="bg-[#0FEE65] text-black hover:bg-white px-6 py-3.5 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer hover:scale-103"
+              className="bg-[#121212] text-white hover:bg-black px-6 py-3.5 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer hover:scale-103 shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
             >
               GET STARTED
             </button>
             <a 
               href="#features"
-              className="inline-flex items-center justify-center bg-white/10 border border-white/20 text-white hover:bg-white/20 px-6 py-3.5 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center bg-black/5 border border-black/10 text-[#121212] hover:bg-black/10 px-6 py-3.5 rounded-full font-hanken font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               EXPLORE FEATURES
             </a>
@@ -354,9 +354,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
       {/* Scroll Indicator */}
       <div ref={indicatorRef} className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none">
-        <span className="font-hanken text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Scroll to explore</span>
-        <div className="w-[1.5px] h-8 bg-white/20 relative overflow-hidden rounded-full">
-          <div className="absolute top-0 left-0 w-full h-1/2 bg-[#0FEE65] rounded-full animate-scroll-dash" />
+        <span className="font-hanken text-[9px] font-bold uppercase tracking-[0.2em] text-[#121212]/60">Scroll to explore</span>
+        <div className="w-[1.5px] h-8 bg-black/20 relative overflow-hidden rounded-full">
+          <div className="absolute top-0 left-0 w-full h-1/2 bg-[#121212] rounded-full animate-scroll-dash" />
         </div>
       </div>
     </section>

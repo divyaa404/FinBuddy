@@ -95,7 +95,7 @@ export const ScrollImageSequence: React.FC<ScrollImageSequenceProps> = ({
     window.addEventListener('resize', handleResize);
 
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
+      gsap.timeline({
         scrollTrigger: {
           trigger: triggerRef.current,
           start: 'top top',
