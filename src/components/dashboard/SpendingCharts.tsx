@@ -37,8 +37,7 @@ interface SpendingChartsProps {
 
 export const SpendingCharts: React.FC<SpendingChartsProps> = ({ 
   transactions,
-  budgets = [],
-  _goals = []
+  budgets = []
 }) => {
   const [period, setPeriod] = useState('This Month');
 
@@ -128,7 +127,7 @@ export const SpendingCharts: React.FC<SpendingChartsProps> = ({
     }]
   };
 
-  const commonOptions: ChartOptions<'line' | 'bar'> = {
+  const commonOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
