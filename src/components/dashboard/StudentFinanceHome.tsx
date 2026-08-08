@@ -4,10 +4,12 @@ import type { Transaction, Budget, SubscriptionItem } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { AnimatedBalance } from './AnimatedBalance';
+import { ActivityCalendar } from './ActivityCalendar';
 import Lottie from 'lottie-react';
 import trophyAnim from '../../assets/animations/Trophy.json';
 import splitCardImg from '../../assets/images/split_card.png';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LottiePlayer = (Lottie as any).default || Lottie;
 
 // Study & Utility Subscriptions Tracker Component
@@ -269,7 +271,7 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
     categorySpentMap[tx.category] = (categorySpentMap[tx.category] || 0) + tx.amount;
   });
 
-  let adherenceScore = 100;
+  let adherenceScore;
   if (budgets.length > 0) {
     let componentsUnderBudget = 0;
     budgets.forEach(b => {
@@ -288,32 +290,11 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
 
   const healthScore = Math.round((savingsScore * 0.4) + (adherenceScore * 0.4) + (82 * 0.2));
 
-  let healthLabel = 'Good';
-  let healthTip = 'healthy saving & spending habits';
-  let healthBgColor = '#0fee65';
-  let healthStatusIndicator = '🟢';
-
-  if (healthScore >= 85) {
-    healthLabel = 'Excellent';
-    healthTip = "You're in great shape this month.";
-    healthBgColor = '#0fee65';
-    healthStatusIndicator = '🟢';
-  } else if (healthScore >= 70) {
-    healthLabel = 'Good';
-    healthTip = 'on track with monthly targets.';
-    healthBgColor = '#0fee65';
-    healthStatusIndicator = '🟢';
-  } else if (healthScore >= 50) {
-    healthLabel = 'Fair';
-    healthTip = 'some budget leaks noticed.';
-    healthBgColor = '#eab308';
-    healthStatusIndicator = '🟡';
-  } else {
-    healthLabel = 'Needs Attention';
-    healthTip = 'high spending rate, low savings.';
-    healthBgColor = '#ef4444';
-    healthStatusIndicator = '🔴';
-  }
+  // Fix: Assign variables dynamically based on score to avoid useless assignments
+  const healthLabel = healthScore >= 85 ? 'Excellent' : healthScore >= 70 ? 'Good' : healthScore >= 50 ? 'Fair' : 'Needs Attention';
+  const healthTip = healthScore >= 85 ? "You're in great shape this month." : healthScore >= 70 ? 'on track with monthly targets.' : healthScore >= 50 ? 'some budget leaks noticed.' : 'high spending rate, low savings.';
+  const healthBgColor = healthScore >= 85 ? '#0fee65' : healthScore >= 70 ? '#0fee65' : healthScore >= 50 ? '#eab308' : '#ef4444';
+  const healthStatusIndicator = healthScore >= 85 ? '🟢' : healthScore >= 70 ? '🟢' : healthScore >= 50 ? '🟡' : '🔴';
 
   // Radial calculation (dashoffset)
   const radius = 42;
@@ -641,6 +622,10 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
         
         {/* Col 1: Streak & Split Promo Stack */}
         <div className="hidden lg:flex lg:col-span-3 flex-col gap-4">
+          
+          {/* Calendar Activity Card */}
+          <ActivityCalendar transactions={transactions} budgets={budgets} />
+          
           {/* Card 1.1: Streak Board (Short height) */}
           <Card variant="light" className="p-4.5 rounded-[24px] flex flex-col gap-3 text-left">
             <div className="flex justify-between items-center">
@@ -716,7 +701,7 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
 
         {/* Col 3: Dorm Leaderboard Card (Dark aspect-[3/4] size) */}
         <div className="hidden lg:block lg:col-span-4">
-          <Card variant="vessel" className="bg-[#121212] text-white p-5 rounded-[24px] border border-white/[0.08] h-full flex flex-col justify-between text-left shadow-xl aspect-[3/4] min-h-[220px]">
+          <Card variant="vessel" className="bg-[#121212] text-white p-5 rounded-[24px] border border-white/[0.08] h-full flex flex-col justify-between text-left shadow-xl min-h-[220px]">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-neon-green text-sm">trophy</span>
@@ -727,7 +712,7 @@ export const StudentFinanceHome: React.FC<StudentFinanceHomeProps> = ({
             
             {/* Big Centered Lottie Trophy Animation */}
             <div className="w-full flex justify-center py-0 -my-3 flex-shrink-0" ref={leaderboardRef}>
-              <div className="w-52 h-52">
+              <div className="w-42 h-42 sm:w-60 sm:h-60">
                 <LottiePlayer key={playCount} animationData={trophyAnim} loop={false} autoplay={true} />
                 </div>
             </div>

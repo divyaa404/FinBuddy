@@ -198,6 +198,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       resizeObserver.disconnect();
       clearTimeout(resizeTimeout);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefersReducedMotion]);
 
   // MOBILE / Reduced motion fallback

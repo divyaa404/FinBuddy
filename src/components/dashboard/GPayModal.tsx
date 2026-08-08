@@ -231,7 +231,7 @@ export const GPayModal: React.FC<GPayModalProps> = ({ isOpen, onClose, onAddTran
               </div>
               <h3 className="font-hanken text-2xl font-extrabold mt-4 tracking-wide text-white">Paid Successfully</h3>
               <p className="text-white/90 font-mono text-sm mt-1.5">₹{parseFloat(amount).toFixed(2)} sent to {selectedRecipient.name}</p>
-              <span className="text-[10px] text-white/40 uppercase tracking-widest mt-2 font-mono">Ref ID: TXN-{Date.now().toString().slice(-6)}</span>
+              <span className="text-[10px] text-white/40 uppercase tracking-widest mt-2 font-mono">Ref ID: TXN-849201</span>
             </motion.div>
           )}
         </AnimatePresence>

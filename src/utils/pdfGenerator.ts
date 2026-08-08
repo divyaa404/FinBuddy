@@ -168,7 +168,7 @@ export const downloadStatementPDF = async (
   docInstance.setFontSize(9);
   docInstance.text('1. TRANSACTION LEDGER', 12, 60);
 
-  let startY = 64;
+  const startY = 64;
   docInstance.setFillColor(238, 242, 238);
   docInstance.rect(12, startY, 90, 5.5, 'F');
   docInstance.setFont('Helvetica', 'bold');
@@ -213,16 +213,16 @@ export const downloadStatementPDF = async (
   });
 
   // 2. Vertical Category Expense Bar Graph
-  let barChartSectionY = 174;
+  const barChartSectionY = 174;
   docInstance.setTextColor(textColor[0], textColor[1], textColor[2]);
   docInstance.setFont('Helvetica', 'bold');
   docInstance.setFontSize(9);
   docInstance.text('2. VISUAL EXPENSE BREAKDOWN', 12, barChartSectionY);
 
-  let chartBottom = barChartSectionY + 32;
-  let chartHeight = 24;
-  let chartLeft = 24;
-  let chartWidth = 72;
+  const chartBottom = barChartSectionY + 32;
+  const chartHeight = 24;
+  const chartLeft = 24;
+  const chartWidth = 72;
 
   // Calculate expenses for categories
   const categoryExpensesLeft: { [key: string]: number } = {};
@@ -296,7 +296,7 @@ export const downloadStatementPDF = async (
   docInstance.setFontSize(9);
   docInstance.text('3. MONTHLY BUDGET LIMITS', 108, 60);
 
-  let budgetHeaderY = 64;
+  const budgetHeaderY = 64;
   docInstance.setFillColor(238, 242, 238);
   docInstance.rect(108, budgetHeaderY, 90, 5.5, 'F');
   docInstance.setFont('Helvetica', 'bold');
@@ -340,7 +340,7 @@ export const downloadStatementPDF = async (
   });
 
   // 4. Savings Goals Achievements (Numbered as 4)
-  let rightGoalSectionY = Math.max(budgetY + 5, 102);
+  const rightGoalSectionY = Math.max(budgetY + 5, 102);
   docInstance.setTextColor(textColor[0], textColor[1], textColor[2]);
   docInstance.setFont('Helvetica', 'bold');
   docInstance.setFontSize(9);
@@ -420,16 +420,16 @@ export const downloadStatementPDF = async (
     docInstance.text(`INR ${savedK}/${targetK}`, cx, rightGoalSectionY + 31.5, { align: 'center' });
   }
 
-  let goalY = rightGoalSectionY + 36;
+  const goalY = rightGoalSectionY + 36;
 
   // 5. AI Insights Box & Expense Progress Bars (Numbered as 5)
-  let insightSectionY = Math.max(goalY + 5, 144);
+  const insightSectionY = Math.max(goalY + 5, 144);
   docInstance.setTextColor(textColor[0], textColor[1], textColor[2]);
   docInstance.setFont('Helvetica', 'bold');
   docInstance.setFontSize(9);
   docInstance.text('5. FINANCIAL INSIGHT & ANALYTICS', 108, insightSectionY);
 
-  let insightBoxY = insightSectionY + 4;
+  const insightBoxY = insightSectionY + 4;
   docInstance.setFillColor(242, 248, 243); // soft green
   docInstance.setDrawColor(200, 225, 205);
   docInstance.roundedRect(108, insightBoxY, 90, 43, 2, 2, 'FD');
@@ -501,16 +501,16 @@ export const downloadStatementPDF = async (
   });
 
   // 6. Balance Trend Line Graph (Numbered as 6)
-  let chartSectionY = Math.max(insightBoxY + 43 + 5, 196);
+  const chartSectionY = Math.max(insightBoxY + 43 + 5, 196);
   docInstance.setTextColor(textColor[0], textColor[1], textColor[2]);
   docInstance.setFont('Helvetica', 'bold');
   docInstance.setFontSize(9);
   docInstance.text('6. WALLET BALANCE TREND', 108, chartSectionY);
 
-  let chartY = chartSectionY + 5;
-  let chartH = 22;
-  let chartX = 118;
-  let chartW = 76;
+  const chartY = chartSectionY + 5;
+  const chartH = 22;
+  const chartX = 118;
+  const chartW = 76;
 
   // Balance trend path
   let tempBalance = balance;

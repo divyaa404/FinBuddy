@@ -84,6 +84,7 @@ export const ScrollImageSequence: React.FC<ScrollImageSequenceProps> = ({
         imagesRef.current[i] = img;
       };
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frameUrls]);
 
   useEffect(() => {
@@ -122,6 +123,7 @@ export const ScrollImageSequence: React.FC<ScrollImageSequenceProps> = ({
       ctx.revert();
       window.removeEventListener('resize', handleResize);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frameUrls, totalFrames, scrollDistance]);
 
   return (

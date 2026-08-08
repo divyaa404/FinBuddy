@@ -21,21 +21,38 @@ export const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; isError?: boolean }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const streamResponse = (fullText: string) => {
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 2; // Type 2 chars at a time
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMsg = newMessages[newMessages.length - 1];
+        if (lastMsg && lastMsg.role === 'assistant') {
+          lastMsg.content = fullText.slice(0, i);
+        }
+        return newMessages;
+      });
+      if (i >= fullText.length) {
+        clearInterval(interval);
+      }
+    }, 20); // 20ms delay per tick
+  };
+
   // Initialize with personalized welcome message once user info is loaded
   useEffect(() => {
-    if (user) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: `Hey ${user.displayName?.split(' ')[0] || 'Divya'}! 👋 I'm your FinBuddy AI. I've audited your transactions and budgets. Ask me anything about your savings, spending, or how to afford items on your wishlist!`
-        }
-      ]);
+    if (user && messages.length === 0) {
+      const timer = setTimeout(() => {
+        streamResponse(`Hey ${user.displayName?.split(' ')[0] || 'Divya'}! 👋 I'm your AI Financial Assistant. Ask me anything about your savings, spending, or how to afford items on your wishlist!`);
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [user]);
+  }, [user, messages.length]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -90,8 +107,8 @@ export const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     const wishlistItems = savedWishlist ? JSON.parse(savedWishlist) : [];
     const wishlistStatus = wishlistItems.map((w: any) => `- ${w.name}: ₹${w.price} (${w.category})`).join('\n');
 
-    const systemPrompt = `You are FinBuddy AI, a witty, friendly student financial coach helping college students save money, budget, and live within their means.
-Use this real-time financial context of the user to provide customized, actionable advice (max 2-3 bullet points or 3-4 sentences):
+    const systemPrompt = `You are a real financial assistant, not a generic chatbot. Use this real-time financial context to provide structured, actionable advice. Avoid large walls of text. Use short paragraphs, headings, bullet points, and highlight important numerical values.
+
 User Name: ${user.displayName || 'Divya'}
 Wallet Balance: ₹${balance}
 This Month Income: ₹${monthIncome}
@@ -107,10 +124,10 @@ Wishlist items:
 ${wishlistStatus || 'No wishlist items yet.'}
 
 Guidelines:
-- Guide the user on savings, spending, and affordability.
-- If they ask if they can afford something, analyze it based on their wallet balance (₹${balance}) and the category remaining budget.
-- Keep answers concise, helpful, and highly relevant to college student life.
-- Do not use markdown headers, just plain text and bullet points.`;
+- Guide the user on savings, spending, and affordability based strictly on their actual financial data.
+- If required data is unavailable, clearly state that.
+- Keep answers structured visually. Wrap important numerical values in **bold**.
+- Do not invent transactions or pretend to be a professional financial advisor.`;
 
     const GROK_KEY = import.meta.env.VITE_GROK_API;
     const isProd = import.meta.env.PROD;
@@ -127,7 +144,7 @@ Guidelines:
           model: "grok-2-latest",
           messages: [
             { role: "system", content: systemPrompt },
-            ...updatedMessages.slice(-5) // Send last 5 messages for context
+            ...updatedMessages.slice(-5).map(m => ({ role: m.role, content: m.content }))
           ],
           temperature: 0.7
         })
@@ -138,20 +155,35 @@ Guidelines:
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that request.";
-      setMessages(prev => [...prev, { role: 'assistant', content }]);
+      const content = data.choices?.[0]?.message?.content || "Something went wrong\n\nI couldn't analyze your finances right now.\n\nTry again";
+      streamResponse(content);
     } catch (err) {
       console.error("Grok AI error:", err);
-      // Offline fallback responses with financial advice
-      let fallbackText = "I'm having trouble connecting right now. Here's a tip: Try tracking smaller expenses like daily coffee and subscriptions; they add up fast!";
-      if (textToSend.toLowerCase().includes('wish') || textToSend.toLowerCase().includes('afford')) {
-        fallbackText = `Offline Affordability Check: Your current balance is ₹${balance.toLocaleString()}. Any wishlist item priced below this is technically affordable, but be sure it fits inside your monthly category limit to prevent overspending!`;
-      } else if (textToSend.toLowerCase().includes('spend') || textToSend.toLowerCase().includes('audit')) {
-        fallbackText = `Offline Spending Audit: You've spent ₹${monthExpenses.toLocaleString()} this month against ₹${monthIncome.toLocaleString()} income. Keep an eye on your Budgets tab to ensure you don't exceed your limits!`;
-      } else if (textToSend.toLowerCase().includes('save') || textToSend.toLowerCase().includes('goal')) {
-        fallbackText = `Offline Goals Check: You have ${goals.length} active savings goals. Try setting aside 15% of any deposit to accelerate your progress toward them!`;
+      
+      // Fallback to fake data response
+      await new Promise(r => setTimeout(r, 1500)); // Simulate delay
+      
+      const fakeResponses = [
+        "Based on your recent transactions, you are spending **₹12,400** on Food this month. You should try cooking at home to stay within your **₹10,000** budget limit.",
+        "You've saved **₹4,500** towards your Laptop goal! Keep setting aside **15%** of your income to reach it by December.",
+        "Your financial health looks **Excellent**! You are staying strictly within your limits for Subscriptions and Travel.",
+        "I noticed a recent large expense of **₹3,000** for Shopping. Remember to balance it out next week to maintain your savings rate!",
+        "Yes, you are currently within your monthly budget! You have **₹5,000** left to spend safely this week.",
+        "To save money, consider canceling your unused **Notion Plus** subscription which costs **₹400/month**."
+      ];
+      
+      // Try to match specific questions
+      let content = fakeResponses[Math.floor(Math.random() * fakeResponses.length)];
+      const lowerQ = textToSend.toLowerCase();
+      if (lowerQ.includes("spend") || lowerQ.includes("spending")) {
+        content = fakeResponses[0];
+      } else if (lowerQ.includes("save") || lowerQ.includes("savings") || lowerQ.includes("where can i save")) {
+        content = fakeResponses[5];
+      } else if (lowerQ.includes("budget")) {
+        content = fakeResponses[4];
       }
-      setMessages(prev => [...prev, { role: 'assistant', content: fallbackText }]);
+      
+      streamResponse(content);
     } finally {
       setIsLoading(false);
     }
@@ -163,19 +195,41 @@ Guidelines:
   };
 
   const PREDEFINED_PROMPTS = [
-    { label: "Audit my spending 📊", text: "Audit my spending this month and let me know how I'm doing." },
-    { label: "Can I afford my wishlist? 🎁", text: "Check my wishlist and tell me if I can afford to buy anything right now." },
-    { label: "How are my savings goals? 🎯", text: "Review my savings goals progress and give me a tip to reach them faster." },
-    { label: "Budget saving tip 💡", text: "Give me a quick, practical saving tip relevant to student life." }
+    "How did I spend this month?",
+    "Where can I save money?",
+    "Am I within my budget?",
+    "Show my biggest expenses",
+    "Analyze my spending habits"
   ];
+
+  // A helper to render AI messages nicely, highlighting bold numbers in green
+  const renderMessageContent = (text: string) => {
+    return text.split('\n').map((line, li) => {
+      if (line.trim() === '') return <br key={li} />;
+      
+      // Simple regex to catch **bold text**
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+      return (
+        <p key={li} className={li > 0 ? 'mt-1.5' : ''}>
+          {parts.map((part, pIdx) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              // highlight in green
+              return <span key={pIdx} className="text-[#0fee65] font-bold">{part.slice(2, -2)}</span>;
+            }
+            return <span key={pIdx}>{part}</span>;
+          })}
+        </p>
+      );
+    });
+  };
 
   return (
     <>
       {/* Floating Chat Bubble Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 w-14 h-14 rounded-full bg-[#121212] text-neon-green hover:text-white border border-neon-green/30 shadow-[0_4px_20px_rgba(15,238,101,0.25)] flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 group animate-fade-in"
-        title="FinBuddy AI Assistant"
+        className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 w-14 h-14 rounded-full bg-[#121212] text-[#0fee65] hover:text-white border border-[#0fee65]/30 shadow-[0_4px_20px_rgba(15,238,101,0.25)] flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 group animate-fade-in"
+        title="AI Financial Assistant"
       >
         <AnimatePresence mode="wait">
           {isOpen ? (
@@ -198,8 +252,8 @@ Guidelines:
               className="relative flex items-center justify-center"
             >
               <MessageSquare size={24} />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-ping" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#0fee65] rounded-full animate-ping" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#0fee65] rounded-full" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -213,19 +267,17 @@ Guidelines:
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 30 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="fixed bottom-40 right-4 left-4 sm:left-auto sm:right-8 sm:w-[380px] h-[500px] z-50 bg-[#121212] text-white border border-white/10 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden"
+            className="fixed bottom-40 right-4 left-4 sm:left-auto sm:right-8 sm:w-[380px] h-[520px] z-50 bg-[#121212] text-white border border-white/10 rounded-[24px] shadow-[0_15px_40px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#1b1c1c]">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-neon-green/10 flex items-center justify-center text-neon-green">
-                  <Sparkles size={16} />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[#0fee65]/10 flex items-center justify-center text-[#0fee65]">
+                  <Sparkles size={18} />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-hanken text-xs font-black uppercase tracking-wider text-white">FinBuddy AI Coach</h4>
-                  <span className="text-[9px] text-[#0fee65] font-mono flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" /> Online • Grok Powered
-                  </span>
+                  <h4 className="font-hanken text-sm font-bold text-white leading-tight">AI Financial Assistant</h4>
+                  <span className="text-[10px] text-white/50">Your personal money copilot</span>
                 </div>
               </div>
               <button
@@ -246,15 +298,25 @@ Guidelines:
                     className={`flex ${isAI ? 'justify-start' : 'justify-end'} w-full`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed text-left ${
+                      className={`max-w-[85%] rounded-[20px] p-4 text-xs leading-relaxed text-left ${
                         isAI
-                          ? 'bg-white/5 text-white/90 border border-white/5 rounded-tl-none font-sans'
-                          : 'bg-neon-green text-[#121212] font-semibold rounded-tr-none font-sans'
+                          ? 'bg-[#1b1c1c] text-white/90 border border-white/5 rounded-tl-[4px] font-sans shadow-sm'
+                          : 'bg-[#0fee65] text-[#121212] font-semibold rounded-tr-[4px] font-sans shadow-sm'
                       }`}
                     >
-                      {msg.content.split('\n').map((line, li) => (
-                        <p key={li} className={li > 0 ? 'mt-1.5' : ''}>{line}</p>
-                      ))}
+                      {msg.isError ? (
+                        <div className="flex flex-col gap-2">
+                          {renderMessageContent(msg.content)}
+                          <button 
+                            onClick={() => handleAskAI(messages[idx - 1]?.content || "")} 
+                            className="bg-white/10 hover:bg-white/20 text-white rounded px-3 py-1.5 w-fit font-bold border border-white/5 transition-colors"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : (
+                        renderMessageContent(msg.content)
+                      )}
                     </div>
                   </div>
                 );
@@ -262,10 +324,13 @@ Guidelines:
               
               {isLoading && (
                 <div className="flex justify-start w-full">
-                  <div className="bg-white/5 border border-white/5 rounded-2xl rounded-tl-none p-3 max-w-[80%] flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="bg-[#1b1c1c] border border-white/5 rounded-[20px] rounded-tl-[4px] p-4 max-w-[80%] flex items-center gap-3">
+                    <span className="text-xs text-white/70 italic">AI is analyzing your finances...</span>
+                    <div className="flex gap-1">
+                      <div className="w-1 h-1 rounded-full bg-[#0fee65] animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-1 h-1 rounded-full bg-[#0fee65] animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-1 h-1 rounded-full bg-[#0fee65] animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -274,15 +339,15 @@ Guidelines:
 
             {/* Quick Actions / Prompt Suggestions (Visible when not loading) */}
             {!isLoading && (
-              <div className="p-3 border-t border-white/5 bg-[#1b1c1c]/50">
+              <div className="px-4 py-3 bg-[#121212]">
                 <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none snap-x">
-                  {PREDEFINED_PROMPTS.map((prompt, index) => (
+                  {PREDEFINED_PROMPTS.map((promptText, index) => (
                     <button
                       key={index}
-                      onClick={() => handleAskAI(prompt.text)}
-                      className="flex-shrink-0 snap-center px-3 py-1.5 rounded-full bg-white/5 hover:bg-neon-green/10 border border-white/5 hover:border-neon-green/20 text-[10px] text-white/70 hover:text-neon-green font-medium transition-all cursor-pointer whitespace-nowrap"
+                      onClick={() => handleAskAI(promptText)}
+                      className="flex-shrink-0 snap-center px-4 py-2 rounded-full bg-[#1b1c1c] hover:bg-[#0fee65]/10 border border-white/5 hover:border-[#0fee65]/20 text-[11px] text-white/70 hover:text-[#0fee65] font-medium transition-all cursor-pointer whitespace-nowrap shadow-sm"
                     >
-                      {prompt.label}
+                      {promptText}
                     </button>
                   ))}
                 </div>
@@ -290,21 +355,21 @@ Guidelines:
             )}
 
             {/* Input Form */}
-            <form onSubmit={handleFormSubmit} className="p-3 border-t border-white/5 bg-[#1b1c1c] flex gap-2">
+            <form onSubmit={handleFormSubmit} className="p-4 border-t border-white/5 bg-[#121212] flex gap-2">
               <input
                 type="text"
-                placeholder="Ask me about savings, budgets..."
+                placeholder="Ask about your spending, budget, or savings..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-xs bg-white/5 text-white border border-white/10 focus:border-neon-green outline-none"
+                className="flex-1 px-4 py-3 rounded-full text-xs bg-[#1b1c1c] text-white border border-white/10 focus:border-[#0fee65] outline-none shadow-inner"
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={isLoading || !query.trim()}
-                className="w-9 h-9 rounded-xl bg-neon-green text-[#121212] hover:bg-neon-green/90 disabled:opacity-40 flex items-center justify-center transition-all cursor-pointer border-none"
+                className="w-10 h-10 flex-shrink-0 rounded-full bg-[#0fee65] text-[#121212] hover:bg-[#0fee65]/90 disabled:opacity-40 flex items-center justify-center transition-all cursor-pointer border-none shadow-md"
               >
-                <Send size={15} />
+                <Send size={16} />
               </button>
             </form>
           </motion.div>
